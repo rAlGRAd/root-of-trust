@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROOT OF TRUST — Carte + Legenda AD v0.2</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+  :root{
+    --paper:#F4F5F2; --paper-2:#EAECE6; --ink:#191C1F; --ink-soft:#3C4248; --rule:#C9CDC4;
+    --def:#27597C; --def-bg:#E4EDF3; --atk:#A8472A; --atk-bg:#F2E4DD; --neu:#6B6256; --neu-bg:#ECE7DD;
+    --display:'Space Grotesk',system-ui,sans-serif; --body:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--body); font-size:16.5px; line-height:1.6; -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1180px; margin:0 auto; padding:0 24px 90px;}
+
+  header.top{border-bottom:3px solid var(--ink); padding:54px 0 24px; margin-bottom:24px;}
+  .kicker{font-family:var(--mono); font-size:12px; letter-spacing:.22em; text-transform:uppercase; color:var(--neu); margin:0 0 12px;}
+  header.top h1{font-family:var(--display); font-weight:700; font-size:clamp(34px,6vw,60px); line-height:.95; letter-spacing:-.02em; margin:0; text-transform:uppercase;}
+  header.top h1 .s{color:var(--def);}
+  header.top p{font-family:var(--display); font-weight:500; color:var(--ink-soft); margin:14px 0 0; max-width:64ch;}
+  .legend-bar{display:flex; gap:10px; flex-wrap:wrap; margin-top:20px; font-family:var(--mono); font-size:11px;}
+  .legend-bar span{border:1px solid var(--rule); background:#fff; padding:5px 9px; letter-spacing:.05em; text-transform:uppercase;}
+  .legend-bar .d{border-left:4px solid var(--def);} .legend-bar .a{border-left:4px solid var(--atk);} .legend-bar .n{border-left:4px solid var(--neu);}
+
+  h2.sec{font-family:var(--display); font-weight:700; font-size:13px; letter-spacing:.18em; text-transform:uppercase; margin:42px 0 4px; display:flex; align-items:center; gap:10px;}
+  h2.sec .n{font-family:var(--mono); font-size:12px; color:#fff; background:var(--ink); padding:2px 8px;}
+  .sec-note{font-size:15px; color:var(--ink-soft); margin:0 0 16px; max-width:78ch;}
+
+  /* keyword glossary */
+  .kwgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:8px;}
+  .kw{border:1px solid var(--rule); background:#fff; padding:9px 11px; border-left:4px solid var(--neu);}
+  .kw b{font-family:var(--mono); font-size:14px;} .kw span{display:block; font-size:14.5px; line-height:1.45; color:var(--ink-soft); margin-top:4px;}
+  .kw.d{border-left-color:var(--def);} .kw.a{border-left-color:var(--atk);}
+
+  /* filters */
+  .filters{position:sticky; top:0; z-index:20; background:var(--paper); padding:14px 0 10px; border-bottom:1px solid var(--rule); display:flex; gap:7px; flex-wrap:wrap; margin-bottom:18px;}
+  .filters button{font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; border:1px solid var(--rule); background:#fff; color:var(--ink-soft); padding:7px 12px; cursor:pointer;}
+  .filters button:hover{border-color:var(--ink);}
+  .filters button.on{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .count{font-family:var(--mono); font-size:11px; color:var(--neu); align-self:center; margin-left:auto;}
+
+  /* ===== CARDS — STS2-inspired game card layout ===== */
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:24px;padding:6px 2px;}
+
+  .card{
+    --fc:#E7B84E;--fd:#241B08;
+    position:relative;width:100%;background:#111318;
+    border-radius:10px;border:2.5px solid var(--fc);
+    box-shadow:0 8px 32px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.06);
+    display:flex;flex-direction:column;overflow:hidden;
+    transition:transform .16s,box-shadow .16s;
+  }
+  .card:hover{transform:translateY(-4px) scale(1.015);box-shadow:0 16px 48px rgba(0,0,0,.75),0 0 20px color-mix(in srgb,var(--fc) 40%,transparent);}
+  .card.def{--fc:#3FA0E6;--fd:#08243D;}
+  .card.atk{--fc:#FF6B3D;--fd:#2E0F05;}
+  .card.neu{--fc:#E7B84E;--fd:#241B08;}
+  /* inner frame ring */
+  .card::before{content:'';position:absolute;inset:3px;border-radius:7px;border:1px solid rgba(255,255,255,.09);pointer-events:none;z-index:8;}
+
+  /* ---- ART AREA ---- */
+  .c-art{
+    position:relative;height:132px;overflow:hidden;flex-shrink:0;
+    background:linear-gradient(145deg,var(--fd) 0%,color-mix(in srgb,var(--fc) 52%,#000) 100%);
+  }
+  .c-art::after{/* diagonal stripe texture */
+    content:'';position:absolute;inset:0;
+    background:repeating-linear-gradient(-45deg,transparent 0,transparent 5px,rgba(255,255,255,.018) 5px,rgba(255,255,255,.018) 6px);
+    pointer-events:none;
+  }
+  .c-art::before{/* radial glow center */
+    content:'';position:absolute;top:44%;left:50%;transform:translate(-50%,-50%);
+    width:90px;height:90px;border-radius:50%;
+    background:radial-gradient(circle,color-mix(in srgb,var(--fc) 36%,transparent) 0%,transparent 70%);
+    pointer-events:none;
+  }
+  .c-art-wm{/* large watermark abbreviation */
+    position:absolute;bottom:-18px;right:-2px;
+    font-family:var(--display);font-size:120px;font-weight:700;line-height:1;letter-spacing:-.06em;
+    color:rgba(255,255,255,.07);user-select:none;pointer-events:none;z-index:1;
+  }
+  /* bottom edge fade into ribbon */
+  .c-art-fade{
+    position:absolute;bottom:0;left:0;right:0;height:28px;
+    background:linear-gradient(transparent,rgba(0,0,0,.55));
+    pointer-events:none;z-index:2;
+  }
+
+  /* cost orb — top left */
+  .c-cost{
+    position:absolute;top:8px;left:8px;width:39px;height:39px;border-radius:50%;
+    background:radial-gradient(circle at 36% 32%,color-mix(in srgb,var(--fc) 55%,white) 0%,var(--fc) 46%,var(--fd) 100%);
+    border:2.5px solid rgba(255,255,255,.42);
+    box-shadow:0 2px 12px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.3);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-weight:700;font-size:16.5px;color:#fff;
+    text-shadow:0 1px 4px rgba(0,0,0,.9);z-index:4;
+  }
+  .c-cost.sys{font-size:9.5px;letter-spacing:.02em;}
+
+  /* type badge — bottom right of art */
+  .c-type{
+    position:absolute;bottom:7px;right:7px;z-index:3;
+    background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.2);border-radius:3px;
+    font-family:var(--mono);font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;
+    color:rgba(255,255,255,.72);padding:3px 7px;
+  }
+
+  /* ---- NAME RIBBON ---- */
+  .c-ribbon{
+    background:linear-gradient(180deg,#090b10 0%,#13161e 100%);
+    border-top:2px solid var(--fc);
+    padding:7px 10px 5px;flex-shrink:0;
+  }
+  .c-title{
+    display:block;font-family:var(--display);font-size:16.5px;font-weight:700;
+    letter-spacing:-.015em;line-height:1.18;color:#fff;text-decoration:none;
+    cursor:help;text-shadow:0 1px 6px rgba(0,0,0,.9);
+  }
+  .c-title:hover{color:var(--fc);}
+  .c-meta{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--fc);margin-top:3px;opacity:.9;}
+
+  /* ---- DESCRIPTION ---- */
+  .c-desc{flex:1;background:#0c0e14;padding:8px 11px 6px;border-top:1px solid rgba(255,255,255,.05);}
+  .c-desc .rel{font-family:var(--body);font-size:13.5px;line-height:1.5;color:rgba(255,255,255,.87);padding:0;}
+  .c-desc .rel .el{font-family:var(--mono);font-size:10.5px;color:color-mix(in srgb,var(--fc) 85%,white);background:rgba(255,255,255,.08);padding:0 3px 1px;border-radius:2px;cursor:help;}
+  .c-desc .rel .ar{color:rgba(255,255,255,.3);font-family:var(--mono);}
+
+  /* ---- KEYWORD BAR ---- */
+  .c-kwbar{display:flex;flex-wrap:wrap;gap:3px;padding:5px 8px 6px;background:#08090e;border-top:1px solid rgba(255,255,255,.05);}
+  .chip{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;border:1px solid rgba(255,255,255,.22);padding:3px 7px;color:rgba(255,255,255,.74);border-radius:2px;cursor:help;background:rgba(255,255,255,.04);}
+
+  /* legend link */
+  .leglink{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;padding:4px 10px 7px;background:#06070b;border-top:1px solid rgba(255,255,255,.04);}
+  .leglink a{color:var(--fc);text-decoration:none;opacity:.5;}
+  .leglink a:hover{opacity:1;text-decoration:underline;}
+
+  .hidden{display:none !important;}
+
+  /* ===== TOOLTIP CHAIN ===== */
+  #tip-chain{position:fixed;inset:0;z-index:60;pointer-events:none;}
+  .tip-col{position:absolute;width:300px;background:var(--ink);color:#fff;border:1px solid rgba(0,0,0,.55);border-radius:5px;padding:13px 15px;font-family:var(--body);font-size:14px;line-height:1.55;opacity:0;transform:translateY(4px);transition:opacity .13s,transform .13s;pointer-events:all;box-shadow:0 10px 28px rgba(0,0,0,.35);word-break:break-word;}
+  .tip-col.show{opacity:1;transform:none;}
+  .tip-col.kw-tip{border-left:3px solid #b5d98a;}
+  .tip-col.pinned{box-shadow:0 0 0 2px #9fc3dd,0 14px 32px rgba(0,0,0,.55);}
+  .tip-col.kw-tip.pinned{box-shadow:0 0 0 2px #b5d98a,0 14px 32px rgba(0,0,0,.55);}
+  .tip-col.pinned::after{content:'📌';position:absolute;top:-10px;right:-6px;font-size:14px;}
+  .tip-tt{font-family:var(--mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:#9fc3dd;margin-bottom:8px;}
+  .tip-col.kw-tip .tip-tt{color:#b5d98a;}
+  .tip-cmd{font-family:var(--mono);font-size:12px;color:#e8c9a0;margin-top:9px;display:block;word-break:break-word;}
+  .tip-more{font-family:var(--mono);font-size:10.5px;color:#8b8f8a;margin-top:9px;text-transform:uppercase;letter-spacing:.08em;}
+  .tip-sec{margin-top:10px;padding-top:8px;border-top:1px dashed rgba(255,255,255,.12);font-size:13px;color:rgba(255,255,255,.66);}
+  .tip-sec-lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.32);}
+  .tip-cmp{margin-top:9px;padding-top:8px;border-top:1px dashed rgba(255,255,255,.12);font-family:var(--mono);font-size:11px;}
+  .tip-cmp-ln{color:#9fc3dd;text-decoration:none;border-bottom:1px dotted rgba(159,195,221,.5);margin-right:6px;}
+  .tip-cmp-ln:hover{color:#c8eaf8;border-bottom-color:#c8eaf8;}
+  /* interactive refs within tooltip columns */
+  .tt-ref{font-family:var(--mono);font-size:12px;color:#9fc3dd;cursor:help;border-bottom:1px dotted rgba(159,195,221,.5);}
+  .tt-ref:hover{color:#c8eaf8;border-bottom-color:#c8eaf8;}
+  .tt-kw{font-family:var(--mono);font-size:12px;color:#b5d98a;cursor:help;border-bottom:1px dotted rgba(181,217,138,.5);}
+  .tt-kw:hover{color:#d0f0a5;border-bottom-color:#d0f0a5;}
+  .kw[data-kw]{cursor:help;}
+
+  /* legend */
+  .leg{border:1px solid var(--rule); background:#fff; padding:13px 15px; margin-bottom:9px; scroll-margin-top:80px; border-left:4px solid var(--neu);}
+  .leg.def{border-left-color:var(--def);} .leg.atk{border-left-color:var(--atk);}
+  .leg:target{background:#FFF7E8; border-left-width:6px;}
+  .leg h3{font-family:var(--mono); font-weight:600; font-size:16.5px; margin:0 0 2px; display:flex; gap:9px; align-items:baseline; flex-wrap:wrap;}
+  .leg h3 .tag{font-family:var(--display); font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--neu); border:1px solid var(--rule); padding:1px 6px;}
+  .leg .r{font-size:15.5px; line-height:1.6; margin:6px 0 0;}
+  .leg .c{font-family:var(--mono); font-size:13px; color:var(--ink); background:var(--paper-2); padding:7px 10px; margin:8px 0 0; word-break:break-word;}
+  .leg .c b{color:var(--def);}
+  .leg .g{font-size:14px; color:var(--ink-soft); margin:8px 0 0; padding-top:7px; border-top:1px dashed var(--rule);}
+  .leg .g b{font-family:var(--display); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--neu);}
+  .leg .g .k{font-family:var(--mono); font-size:11.5px; background:var(--paper-2); padding:0 4px;}
+  .leg .cmp{font-size:13.5px; color:var(--ink-soft); margin:8px 0 0; padding-top:7px; border-top:1px dashed var(--rule);}
+  .leg .cmp b{font-family:var(--display); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--neutral); margin-right:6px;}
+  .cmp-ln{font-family:var(--mono); font-size:12.5px; color:var(--def); text-decoration:none; border-bottom:1px dotted var(--def); margin-right:5px;}
+  .cmp-ln:hover{background:var(--def-bg);}
+  .leg-class{font-family:var(--display); font-weight:700; font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--neu); margin:22px 0 8px; border-bottom:1px solid var(--rule); padding-bottom:5px;}
+  .src-note{font-family:var(--mono); font-size:11.5px; color:var(--neu); background:var(--neu-bg); border:1px solid var(--rule); padding:9px 12px; margin:0 0 18px; line-height:1.55;}
+
+  footer{margin-top:46px; padding-top:18px; border-top:3px solid var(--ink); font-family:var(--mono); font-size:12.5px; color:var(--neu); line-height:1.7;}
+
+  /* ===== TOP NAV ===== */
+  .topnav{display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:16px 0 0;}
+  .topnav a{font-family:var(--display); font-weight:600; font-size:13px; letter-spacing:.04em; text-transform:uppercase; text-decoration:none; color:var(--ink-soft); border:1px solid var(--rule); background:#fff; padding:8px 14px; border-radius:6px;}
+  .topnav a:hover{border-color:var(--ink); color:var(--ink);}
+  .topnav a.cur{background:var(--ink); color:#fff; border-color:var(--ink);}
+
+  /* ===== SEARCH BAR + AUTOCOMPLETE ===== */
+  .controls{position:sticky; top:0; z-index:30; background:var(--paper); padding:12px 0 10px; margin-bottom:14px; border-bottom:1px solid var(--rule);}
+  .controls .filters{position:static; border-bottom:none; padding:10px 0 0; margin-bottom:0;}
+  .searchwrap{position:relative; max-width:560px;}
+  #search{width:100%; font-family:var(--body); font-size:16px; color:var(--ink); background:#fff; border:2px solid var(--rule); border-radius:9px; padding:13px 42px 13px 16px; outline:none;}
+  #search:focus{border-color:var(--def);}
+  #search::placeholder{color:#9aa0a4;}
+  .search-ico{position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--neu); font-family:var(--mono); font-size:15px; pointer-events:none;}
+  .ac{position:absolute; left:0; right:0; top:calc(100% + 5px); background:#fff; border:1px solid var(--rule); border-radius:9px; box-shadow:0 12px 34px rgba(0,0,0,.16); overflow:hidden; display:none; z-index:40;}
+  .ac.open{display:block;}
+  .ac-item{display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; border-bottom:1px solid var(--paper-2);}
+  .ac-item:last-child{border-bottom:none;}
+  .ac-item:hover,.ac-item.sel{background:var(--def-bg);}
+  .ac-item .nm{font-family:var(--display); font-weight:600; font-size:14.5px; color:var(--ink); flex:1;}
+  .ac-item .nm small{font-family:var(--body); font-weight:400; color:var(--ink-soft);}
+  .ac-item .badge{font-family:var(--mono); font-size:9.5px; letter-spacing:.06em; text-transform:uppercase; padding:3px 7px; border-radius:4px; background:var(--neu-bg); color:var(--neu); white-space:nowrap;}
+  .ac-item .badge.def{background:var(--def-bg); color:var(--def);}
+  .ac-item .badge.atk{background:var(--atk-bg); color:var(--atk);}
+  .ac-empty{padding:14px; font-family:var(--body); font-size:14px; color:var(--neu);}
+
+  /* flash highlight when jumping to an entry */
+  @keyframes flashbg{0%{background:#FFE9A8;}100%{background:transparent;}}
+  .flash{animation:flashbg 1.6s ease-out;}
+  .kw.flash,.leg.flash{animation:flashbg 1.6s ease-out;}
+
+  /* ===== MOBILE / RESPONSIVE ===== */
+  @media (max-width:760px){
+    body{font-size:16px;}
+    .wrap{padding:0 16px 80px;}
+    header.top{padding:30px 0 20px;}
+    .cards{grid-template-columns:repeat(auto-fill,minmax(176px,1fr)); gap:16px;}
+    .kwgrid{grid-template-columns:1fr;}
+  }
+  @media (hover:none){
+    /* touch devices: chained hover tooltips can't work — rely on tapping → legenda */
+    #tip-chain{display:none !important;}
+    .c-title,.chip,.el,.kw[data-kw]{cursor:pointer;}
+  }
+  @media (max-width:430px){
+    .cards{grid-template-columns:1fr 1fr; gap:11px;}
+    .c-art{height:112px;}
+    .c-art-wm{font-size:92px;}
+  }
+</style>
+</head>
+<body>
+<div id="tip-chain"></div>
+<div class="wrap">
+
+  <nav class="topnav">
+    <a class="cur" href="index.html">▣ Carte &amp; Legenda</a>
+    <a href="compendio.html">▤ Compendio · Regole</a>
+    <a href="diagramma.html">◆ Diagramma di flusso</a>
+  </nav>
+
+  <header class="top">
+    <p class="kicker">Carte + Legenda AD · v0.2 — la carta dice il processo, lo specchietto dice cos'è davvero</p>
+    <h1>ROOT <span class="s">/</span> OF <span class="s">/</span> TRUST</h1>
+    <p>Passa il puntatore su un <b>nome-carta</b> o su un <b>[elemento]</b> nel testo per la sintesi AD reale; passa sulle <b>chip-keyword</b> per il significato del termine fuori dal gioco. Clicca il nome (o «→ legenda») per la voce completa. Fonti: MOD&nbsp;3.3.</p>
+    <div class="legend-bar">
+      <span class="d">Blu · Domain Admin</span><span class="a">Rame · Threat Actor</span><span class="n">Bruno · Motore neutro</span>
+      <span>Orb «S» = elemento di sistema</span><span>Hover nome/[elem] = carta AD · Hover chip = keyword AD</span>
+    </div>
+  </header>
+
+  <!-- KEYWORD GLOSSARY -->
+  <h2 class="sec"><span class="n">A</span> Glossario parole-chiave (meccaniche di gioco)</h2>
+  <p class="sec-note">Vocabolario dei processi di gioco. Le carte vi rimandano con le chip in fondo. Per il significato reale del termine, usa invece lo specchietto/legenda.</p>
+  <div class="kwgrid" id="kwgrid"></div>
+
+  <!-- CARDS -->
+  <h2 class="sec"><span class="n">B</span> Carte</h2>
+  <div class="controls">
+    <div class="searchwrap">
+      <input id="search" type="text" placeholder="Cerca una carta, un termine AD o una keyword…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Cerca">
+      <span class="search-ico">⌕</span>
+      <div class="ac" id="ac"></div>
+    </div>
+    <div class="filters" id="filters">
+      <button data-f="all" class="on">Tutte</button>
+      <button data-f="PROTOCOL">Protocol</button>
+      <button data-f="DIRECTORY">Directory</button>
+      <button data-f="IDENTITY">Identity</button>
+      <button data-f="ACCESS">Access</button>
+      <button data-f="POLICY">Policy</button>
+      <button data-f="TOPOLOGY">Topology</button>
+      <button data-f="THREAT">Threat</button>
+      <span class="count" id="count"></span>
+    </div>
+  </div>
+  <div class="cards" id="cards"></div>
+  <div id="nohits" class="ac-empty" style="display:none;">Nessun risultato per la ricerca.</div>
+
+  <!-- LEGEND -->
+  <h2 class="sec"><span class="n">C</span> Legenda — Active Directory reale</h2>
+  <p class="sec-note">Sintesi di ogni termine così com'è in AD puro (non in-game). Struttura: <b>Ruolo &amp; funzionamento</b> · <b>Comandi/strumenti</b> · <b>In gioco</b> (il ponte verso il processo della carta).</p>
+  <div class="src-note">Fonte: materiale del MOD 3.3 (AD DS — BERNABEI). Le voci della classe THREAT non sono nel materiale d'esame: descrivono la tecnica d'attacco reale che ciascuna carta modella, come contraltare offensivo del contenuto difensivo del modulo.</div>
+  <div id="legend"></div>
+
+  <footer>
+    ROOT OF TRUST — v0.2 · carte (processo) + legenda (AD reale) · costi e Noise restano segnaposto.<br>
+    Criterio di accettazione: ogni specchietto deve essere fedele al comportamento reale di Active Directory.
+  </footer>
+
+</div>
+
+<script src="data.js"></script>
+<script>
+function E(s){return s.replace(/\[(.+?)\]/g,'<span class="el" data-term="$1">$1</span>');}
+function slug(s){return 'leg-'+s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');}
+function kwid(s){return 'kw-'+s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');}
+
+/* ---- COMPENDIUM REFERENCES ---- */
+const CARD_CLS={}; CARDS.forEach(c=>CARD_CLS[c.n]=c.cls);
+function cmpAnchor(ref){
+  const p=String(ref).split('.');
+  const a=p.length===1?('sec-'+p[0]):p.length===2?('s-'+p.join('-')):('r-'+p.join('-'));
+  return 'compendio.html#'+a;
+}
+function refsFor(key,isKw){
+  if(isKw) return (typeof KW_REF!=='undefined'&&KW_REF[key])||[];
+  if(typeof TERM_REF!=='undefined'&&TERM_REF[key]) return TERM_REF[key];
+  const cls=CARD_CLS[key];
+  return (cls&&typeof CLS_REF!=='undefined'&&CLS_REF[cls])?[CLS_REF[cls]]:[];
+}
+function cmpLinks(refs,cls){
+  return (refs||[]).map(r=>`<a class="${cls}" href="${cmpAnchor(r)}" title="Compendio §${r}">§ ${r}</a>`).join(' ');
+}
+
+document.getElementById('kwgrid').innerHTML = KW.map(k=>`<div class="kw ${k[1]}" id="${kwid(k[0])}" data-kw="${k[0].replace(/"/g,'&quot;')}" style="scroll-margin-top:120px"><b>${k[0]}</b><span>${k[2]}</span></div>`).join('');
+
+/* ---- RENDER CARDS ---- */
+const CLS_ART={PROTOCOL:'PT',DIRECTORY:'DIR',IDENTITY:'ID',ACCESS:'ACC',POLICY:'POL',TOPOLOGY:'TOP',THREAT:'THR'};
+const grid=document.getElementById('cards'), countEl=document.getElementById('count'), noHits=document.getElementById('nohits');
+let curCls='all', curQ='';
+function norm(s){return (s||'').toLowerCase();}
+function cardMatches(c,q){
+  if(!q) return true;
+  const info=INFO[c.n]||{};
+  return norm(c.n).includes(q)||norm(c.cls).includes(q)||norm(c.ty).includes(q)
+    ||c.kw.some(k=>norm(k).includes(q))||norm(c.rel).includes(q)
+    ||norm(info.r).includes(q)||norm(info.g).includes(q);
+}
+function render(){
+  grid.innerHTML=''; let shown=0; const q=curQ.toLowerCase();
+  CARDS.forEach(c=>{
+    if(curCls!=='all' && c.cls!==curCls) return;
+    if(!cardMatches(c,q)) return; shown++;
+    const sys=c.cost==='S';
+    const chips=c.kw.map(k=>`<span class="chip" data-kw="${k.replace(/"/g,'&quot;')}">${k}</span>`).join('');
+    const id=slug(c.n);
+    const wm=CLS_ART[c.cls]||c.cls.slice(0,3);
+    const el=document.createElement('div');
+    el.className='card '+c.fac;
+    el.innerHTML=`
+      <div class="c-art">
+        <div class="c-cost ${sys?'sys':''}">${c.cost}</div>
+        <div class="c-type">${c.ty}</div>
+        <div class="c-art-wm">${wm}</div>
+        <div class="c-art-fade"></div>
+      </div>
+      <div class="c-ribbon">
+        <a class="c-title" href="#${id}" data-term="${c.n.replace(/"/g,'&quot;')}">${c.n}</a>
+        <div class="c-meta">${c.ty} · ${c.cls}</div>
+      </div>
+      <div class="c-desc"><div class="rel">${E(c.rel)}</div></div>
+      ${chips?`<div class="c-kwbar">${chips}</div>`:''}
+      <div class="leglink"><a href="#${id}">→ legenda AD</a></div>`;
+    grid.appendChild(el);
+  });
+  countEl.textContent=shown+' / '+CARDS.length+' carte';
+  noHits.style.display=shown?'none':'block';
+}
+document.getElementById('filters').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#filters button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); curCls=b.dataset.f; render();
+});
+
+/* ---- RENDER LEGEND ---- */
+const CLS_LABEL={PROTOCOL:"Protocol — motore neutro",DIRECTORY:"Directory — architettura",IDENTITY:"Identity — principal & token",ACCESS:"Access — controllo accessi",POLICY:"Policy — Group Policy",TOPOLOGY:"Topology / Ops — siti, repliche, FSMO, DR",THREAT:"Threat — tecniche d'attacco"};
+const ORDER=["PROTOCOL","DIRECTORY","IDENTITY","ACCESS","POLICY","TOPOLOGY","THREAT"];
+const legHost=document.getElementById('legend');
+ORDER.forEach(cl=>{
+  const h=document.createElement('div'); h.className='leg-class'; h.textContent=CLS_LABEL[cl]; legHost.appendChild(h);
+  CARDS.filter(c=>c.cls===cl).forEach(c=>{
+    const info=INFO[c.n]||{r:'(da completare)'};
+    const d=document.createElement('div'); d.className='leg '+c.fac; d.id=slug(c.n);
+    d.innerHTML=`
+      <h3>${c.n} <span class="tag">${c.ty} · ${c.cls}</span></h3>
+      <div class="r">${info.r}</div>
+      ${info.c?`<div class="c"><b>Comandi/strumenti:</b> ${info.c}</div>`:''}
+      ${info.g?`<div class="g"><b>In gioco</b> · ${info.g.replace(/\b([A-Z][A-Z/ ]{2,})\b/g,'<span class="k">$1</span>')}</div>`:''}
+      ${(()=>{const rf=refsFor(c.n,false);return rf.length?`<div class="cmp"><b>Compendio</b>${cmpLinks(rf,'cmp-ln')}</div>`:'';})()}`;
+    legHost.appendChild(d);
+  });
+});
+
+/* ---- ANNOTATE + CHAINED TOOLTIP ---- */
+
+// Sorted term table: longest first to avoid partial matches (e.g. "NTLM Relay" before "NTLM")
+const ANNOT=[
+  ...CARDS.map(c=>({key:c.n,isKw:false})),
+  ...KW.map(k=>({key:k[0],isKw:true}))
+].sort((a,b)=>b.key.length-a.key.length);
+
+// Annotate plain text: wrap recognised card names and keywords with interactive spans
+function annotate(raw,skip){
+  if(!raw) return '';
+  let out='',i=0,n=raw.length;
+  while(i<n){
+    let hit=false;
+    for(const t of ANNOT){
+      if(t.key===skip) continue; // avoid self-reference in same column
+      const tl=t.key.length;
+      if(raw.slice(i,i+tl)!==t.key) continue;
+      const pre=i===0||/[\s([;:,.'"«»—\-\/]/.test(raw[i-1]);
+      const post=i+tl>=n||/[\s);:,.'"«»—\-\/\]]/.test(raw[i+tl]);
+      if(!pre||!post) continue;
+      const esc=t.key.replace(/"/g,'&quot;');
+      out+=t.isKw
+        ?`<span class="tt-kw" data-kw="${esc}">${t.key}</span>`
+        :`<span class="tt-ref" data-term="${esc}">${t.key}</span>`;
+      i+=tl; hit=true; break;
+    }
+    if(!hit){const c=raw[i];out+=c==='<'?'&lt;':c==='>'?'&gt;':c==='&'?'&amp;':c;i++;}
+  }
+  return out;
+}
+
+function buildCol(label,isKw,info,self){
+  const r=annotate(info.r,self);
+  const c=info.c?`<span class="tip-cmd">⌘ ${annotate(info.c,self)}</span>`:'';
+  const g=info.g
+    ?`<div class="tip-sec"><span class="tip-sec-lbl">In gioco</span> · ${annotate(info.g,self)}</div>`:'';
+  const refs=refsFor(self,isKw);
+  const cmp=refs.length?`<div class="tip-cmp"><span class="tip-sec-lbl">Compendio</span> ${cmpLinks(refs,'tip-cmp-ln')}</div>`:'';
+  const more=`<div class="tip-more">${!isKw?'click nome → legenda · ':''}click sul box = fissa / sblocca</div>`;
+  return `<div class="tip-tt">${label}</div>${r}${c}${g}${cmp}${more}`;
+}
+
+// ---- Independent floating overlay windows (each pins / closes on its OWN click) ----
+const tipChain=document.getElementById('tip-chain');
+let wins=[];  // { el, key, isKw, pinned, t }
+
+function clampPos(el,x,y){
+  const w=el.offsetWidth||300, h=el.offsetHeight||160;
+  el.style.left=Math.max(8,Math.min(x, innerWidth-w-8))+'px';
+  el.style.top =Math.max(8,Math.min(y, innerHeight-h-8))+'px';
+}
+function findWin(key,isKw){return wins.find(w=>w.key===key&&w.isKw===isKw);}
+function killWin(w){if(!w)return;clearTimeout(w.t);w.el.remove();wins=wins.filter(x=>x!==w);}
+function softHide(w){clearTimeout(w.t);w.t=setTimeout(()=>{if(!w.pinned)killWin(w);},260);}
+
+function openWin(key,isKw,x,y){
+  const info=isKw?KW_INFO[key]:INFO[key]; if(!info) return null;
+  let w=findWin(key,isKw);
+  if(w){clearTimeout(w.t); return w;}                 // already open → keep this window
+  const el=document.createElement('div');
+  el.className='tip-col'+(isKw?' kw-tip':'');
+  el.innerHTML=buildCol(isKw?`${key} — AD reale`:`${key} — Active Directory`, isKw, info, key);
+  el.style.left='-9999px'; el.style.top='0px';
+  tipChain.appendChild(el);
+  clampPos(el,(x!=null?x+14:80),(y!=null?y+14:80));
+  requestAnimationFrame(()=>el.classList.add('show'));
+  w={el,key,isKw,pinned:false,t:null};
+  wins.push(w);
+  el.addEventListener('mouseenter',()=>clearTimeout(w.t));
+  el.addEventListener('mouseleave',()=>{ if(!w.pinned) softHide(w); });
+  el.addEventListener('click',e=>{
+    if(e.target.closest('a')) return;                 // compendio/legend links navigate normally
+    e.stopPropagation();
+    w.pinned=!w.pinned;
+    el.classList.toggle('pinned',w.pinned);
+    if(!w.pinned) killWin(w); else clearTimeout(w.t);  // un-pin closes only THIS window
+  });
+  // refs inside open their OWN independent window, beside the reference
+  el.querySelectorAll('.tt-ref').forEach(r=>r.addEventListener('mouseenter',()=>{
+    const rc=r.getBoundingClientRect(); openWin(r.dataset.term,false,rc.right-14,rc.top-12);
+  }));
+  el.querySelectorAll('.tt-kw').forEach(r=>r.addEventListener('mouseenter',()=>{
+    const rc=r.getBoundingClientRect(); openWin(r.dataset.kw,true,rc.right-14,rc.top-12);
+  }));
+  return w;
+}
+
+function trigKey(src){
+  if(src.classList.contains('c-title')) return [src.dataset.term,false];
+  if(src.classList.contains('el')) return [src.dataset.term,false];
+  if(src.hasAttribute('data-kw')) return [src.dataset.kw,true];
+  return null;
+}
+document.addEventListener('mouseover',e=>{
+  if(e.target.closest('#tip-chain')) return;          // refs inside windows have their own handlers
+  const src=e.target.closest('.c-title,.el[data-term],[data-kw]'); if(!src) return;
+  const k=trigKey(src); if(!k) return;
+  openWin(k[0],k[1],e.clientX,e.clientY);
+});
+document.addEventListener('mouseout',e=>{
+  const src=e.target.closest('.c-title,.el[data-term],[data-kw]'); if(!src||src.closest('#tip-chain')) return;
+  const dst=e.relatedTarget;
+  if(dst&&dst.closest('#tip-chain')) return;          // moving into a window keeps it
+  const k=trigKey(src); if(!k) return;
+  const w=findWin(k[0],k[1]); if(w&&!w.pinned) softHide(w);
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') wins.slice().forEach(killWin); });
+
+/* ---- SEARCH + AUTOCOMPLETE ---- */
+const searchEl=document.getElementById('search'), acEl=document.getElementById('ac');
+const FAC={d:'def',a:'atk',n:'neu'};
+const SUG=[
+  ...CARDS.map(c=>({label:c.n, kind:'card', fac:c.fac, sub:c.ty+' · '+c.cls, id:slug(c.n)})),
+  ...KW.map(k=>({label:k[0], kind:'kw', fac:FAC[k[1]]||'neu', sub:'Keyword', id:kwid(k[0])}))
+];
+let acItems=[], acSel=-1;
+function buildSug(q){
+  q=q.toLowerCase().trim(); if(!q) return [];
+  const starts=[], has=[];
+  for(const s of SUG){
+    const l=s.label.toLowerCase();
+    if(l.startsWith(q)) starts.push(s); else if(l.includes(q)) has.push(s);
+  }
+  starts.sort((a,b)=>a.label.length-b.label.length);
+  return starts.concat(has).slice(0,8);
+}
+function renderAC(){
+  if(!acItems.length){acEl.classList.remove('open');acEl.innerHTML='';return;}
+  acEl.innerHTML=acItems.map((s,i)=>
+    `<div class="ac-item${i===acSel?' sel':''}" data-i="${i}"><span class="nm">${s.label} <small>${s.kind==='card'?'carta':'keyword'}</small></span><span class="badge ${s.fac}">${s.kind==='card'?s.sub:'keyword'}</span></div>`
+  ).join('');
+  acEl.classList.add('open');
+}
+function jumpTo(s){
+  const node=document.getElementById(s.id); if(!node) return;
+  node.scrollIntoView({behavior:'smooth', block:'center'});
+  node.classList.remove('flash'); void node.offsetWidth; node.classList.add('flash');
+}
+function chooseSug(s){
+  if(!s) return;
+  searchEl.value=s.label; curQ=s.label;
+  acItems=[]; acSel=-1; renderAC(); render(); jumpTo(s);
+}
+searchEl.addEventListener('input',()=>{
+  curQ=searchEl.value.trim(); render();
+  acItems=buildSug(curQ); acSel=-1; renderAC();
+});
+searchEl.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){searchEl.value='';curQ='';acItems=[];acSel=-1;renderAC();render();searchEl.blur();return;}
+  if(!acItems.length) return;
+  if(e.key==='ArrowDown'){e.preventDefault();acSel=(acSel+1)%acItems.length;renderAC();}
+  else if(e.key==='ArrowUp'){e.preventDefault();acSel=(acSel-1+acItems.length)%acItems.length;renderAC();}
+  else if(e.key==='Enter'){e.preventDefault();chooseSug(acItems[acSel>=0?acSel:0]);}
+});
+acEl.addEventListener('mousedown',e=>{
+  const it=e.target.closest('.ac-item'); if(!it) return;
+  e.preventDefault(); chooseSug(acItems[+it.dataset.i]);
+});
+searchEl.addEventListener('blur',()=>setTimeout(()=>acEl.classList.remove('open'),120));
+searchEl.addEventListener('focus',()=>{if(acItems.length)acEl.classList.add('open');});
+
+render();
+</script>
+</body>
+</html>

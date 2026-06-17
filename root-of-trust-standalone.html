@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROOT OF TRUST — Carte + Legenda AD v0.2</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+  :root{
+    --paper:#F4F5F2; --paper-2:#EAECE6; --ink:#191C1F; --ink-soft:#3C4248; --rule:#C9CDC4;
+    --def:#27597C; --def-bg:#E4EDF3; --atk:#A8472A; --atk-bg:#F2E4DD; --neu:#6B6256; --neu-bg:#ECE7DD;
+    --display:'Space Grotesk',system-ui,sans-serif; --body:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--body); font-size:16.5px; line-height:1.6; -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1180px; margin:0 auto; padding:0 24px 90px;}
+
+  header.top{border-bottom:3px solid var(--ink); padding:54px 0 24px; margin-bottom:24px;}
+  .kicker{font-family:var(--mono); font-size:12px; letter-spacing:.22em; text-transform:uppercase; color:var(--neu); margin:0 0 12px;}
+  header.top h1{font-family:var(--display); font-weight:700; font-size:clamp(34px,6vw,60px); line-height:.95; letter-spacing:-.02em; margin:0; text-transform:uppercase;}
+  header.top h1 .s{color:var(--def);}
+  header.top p{font-family:var(--display); font-weight:500; color:var(--ink-soft); margin:14px 0 0; max-width:64ch;}
+  .legend-bar{display:flex; gap:10px; flex-wrap:wrap; margin-top:20px; font-family:var(--mono); font-size:11px;}
+  .legend-bar span{border:1px solid var(--rule); background:#fff; padding:5px 9px; letter-spacing:.05em; text-transform:uppercase;}
+  .legend-bar .d{border-left:4px solid var(--def);} .legend-bar .a{border-left:4px solid var(--atk);} .legend-bar .n{border-left:4px solid var(--neu);}
+
+  h2.sec{font-family:var(--display); font-weight:700; font-size:13px; letter-spacing:.18em; text-transform:uppercase; margin:42px 0 4px; display:flex; align-items:center; gap:10px;}
+  h2.sec .n{font-family:var(--mono); font-size:12px; color:#fff; background:var(--ink); padding:2px 8px;}
+  .sec-note{font-size:15px; color:var(--ink-soft); margin:0 0 16px; max-width:78ch;}
+
+  /* keyword glossary */
+  .kwgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:8px;}
+  .kw{border:1px solid var(--rule); background:#fff; padding:9px 11px; border-left:4px solid var(--neu);}
+  .kw b{font-family:var(--mono); font-size:14px;} .kw span{display:block; font-size:14.5px; line-height:1.45; color:var(--ink-soft); margin-top:4px;}
+  .kw.d{border-left-color:var(--def);} .kw.a{border-left-color:var(--atk);}
+
+  /* filters */
+  .filters{position:sticky; top:0; z-index:20; background:var(--paper); padding:14px 0 10px; border-bottom:1px solid var(--rule); display:flex; gap:7px; flex-wrap:wrap; margin-bottom:18px;}
+  .filters button{font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; border:1px solid var(--rule); background:#fff; color:var(--ink-soft); padding:7px 12px; cursor:pointer;}
+  .filters button:hover{border-color:var(--ink);}
+  .filters button.on{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .count{font-family:var(--mono); font-size:11px; color:var(--neu); align-self:center; margin-left:auto;}
+
+  /* ===== CARDS — STS2-inspired game card layout ===== */
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:24px;padding:6px 2px;}
+
+  .card{
+    --fc:#E7B84E;--fd:#241B08;
+    position:relative;width:100%;background:#111318;
+    border-radius:10px;border:2.5px solid var(--fc);
+    box-shadow:0 8px 32px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.06);
+    display:flex;flex-direction:column;overflow:hidden;
+    transition:transform .16s,box-shadow .16s;
+  }
+  .card:hover{transform:translateY(-4px) scale(1.015);box-shadow:0 16px 48px rgba(0,0,0,.75),0 0 20px color-mix(in srgb,var(--fc) 40%,transparent);}
+  .card.def{--fc:#3FA0E6;--fd:#08243D;}
+  .card.atk{--fc:#FF6B3D;--fd:#2E0F05;}
+  .card.neu{--fc:#E7B84E;--fd:#241B08;}
+  /* inner frame ring */
+  .card::before{content:'';position:absolute;inset:3px;border-radius:7px;border:1px solid rgba(255,255,255,.09);pointer-events:none;z-index:8;}
+
+  /* ---- ART AREA ---- */
+  .c-art{
+    position:relative;height:132px;overflow:hidden;flex-shrink:0;
+    background:linear-gradient(145deg,var(--fd) 0%,color-mix(in srgb,var(--fc) 52%,#000) 100%);
+  }
+  .c-art::after{/* diagonal stripe texture */
+    content:'';position:absolute;inset:0;
+    background:repeating-linear-gradient(-45deg,transparent 0,transparent 5px,rgba(255,255,255,.018) 5px,rgba(255,255,255,.018) 6px);
+    pointer-events:none;
+  }
+  .c-art::before{/* radial glow center */
+    content:'';position:absolute;top:44%;left:50%;transform:translate(-50%,-50%);
+    width:90px;height:90px;border-radius:50%;
+    background:radial-gradient(circle,color-mix(in srgb,var(--fc) 36%,transparent) 0%,transparent 70%);
+    pointer-events:none;
+  }
+  .c-art-wm{/* large watermark abbreviation */
+    position:absolute;bottom:-18px;right:-2px;
+    font-family:var(--display);font-size:120px;font-weight:700;line-height:1;letter-spacing:-.06em;
+    color:rgba(255,255,255,.07);user-select:none;pointer-events:none;z-index:1;
+  }
+  /* bottom edge fade into ribbon */
+  .c-art-fade{
+    position:absolute;bottom:0;left:0;right:0;height:28px;
+    background:linear-gradient(transparent,rgba(0,0,0,.55));
+    pointer-events:none;z-index:2;
+  }
+
+  /* cost orb — top left */
+  .c-cost{
+    position:absolute;top:8px;left:8px;width:39px;height:39px;border-radius:50%;
+    background:radial-gradient(circle at 36% 32%,color-mix(in srgb,var(--fc) 55%,white) 0%,var(--fc) 46%,var(--fd) 100%);
+    border:2.5px solid rgba(255,255,255,.42);
+    box-shadow:0 2px 12px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.3);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-weight:700;font-size:16.5px;color:#fff;
+    text-shadow:0 1px 4px rgba(0,0,0,.9);z-index:4;
+  }
+  .c-cost.sys{font-size:9.5px;letter-spacing:.02em;}
+
+  /* type badge — bottom right of art */
+  .c-type{
+    position:absolute;bottom:7px;right:7px;z-index:3;
+    background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.2);border-radius:3px;
+    font-family:var(--mono);font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;
+    color:rgba(255,255,255,.72);padding:3px 7px;
+  }
+
+  /* ---- NAME RIBBON ---- */
+  .c-ribbon{
+    background:linear-gradient(180deg,#090b10 0%,#13161e 100%);
+    border-top:2px solid var(--fc);
+    padding:7px 10px 5px;flex-shrink:0;
+  }
+  .c-title{
+    display:block;font-family:var(--display);font-size:16.5px;font-weight:700;
+    letter-spacing:-.015em;line-height:1.18;color:#fff;text-decoration:none;
+    cursor:help;text-shadow:0 1px 6px rgba(0,0,0,.9);
+  }
+  .c-title:hover{color:var(--fc);}
+  .c-meta{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--fc);margin-top:3px;opacity:.9;}
+
+  /* ---- DESCRIPTION ---- */
+  .c-desc{flex:1;background:#0c0e14;padding:8px 11px 6px;border-top:1px solid rgba(255,255,255,.05);}
+  .c-desc .rel{font-family:var(--body);font-size:13.5px;line-height:1.5;color:rgba(255,255,255,.87);padding:0;}
+  .c-desc .rel .el{font-family:var(--mono);font-size:10.5px;color:color-mix(in srgb,var(--fc) 85%,white);background:rgba(255,255,255,.08);padding:0 3px 1px;border-radius:2px;cursor:help;}
+  .c-desc .rel .ar{color:rgba(255,255,255,.3);font-family:var(--mono);}
+
+  /* ---- KEYWORD BAR ---- */
+  .c-kwbar{display:flex;flex-wrap:wrap;gap:3px;padding:5px 8px 6px;background:#08090e;border-top:1px solid rgba(255,255,255,.05);}
+  .chip{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;border:1px solid rgba(255,255,255,.22);padding:3px 7px;color:rgba(255,255,255,.74);border-radius:2px;cursor:help;background:rgba(255,255,255,.04);}
+
+  /* legend link */
+  .leglink{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;padding:4px 10px 7px;background:#06070b;border-top:1px solid rgba(255,255,255,.04);}
+  .leglink a{color:var(--fc);text-decoration:none;opacity:.5;}
+  .leglink a:hover{opacity:1;text-decoration:underline;}
+
+  .hidden{display:none !important;}
+
+  /* ===== TOOLTIP CHAIN ===== */
+  #tip-chain{position:fixed;inset:0;z-index:60;pointer-events:none;}
+  .tip-col{position:absolute;width:300px;background:var(--ink);color:#fff;border:1px solid rgba(0,0,0,.55);border-radius:5px;padding:13px 15px;font-family:var(--body);font-size:14px;line-height:1.55;opacity:0;transform:translateY(4px);transition:opacity .13s,transform .13s;pointer-events:all;box-shadow:0 10px 28px rgba(0,0,0,.35);word-break:break-word;}
+  .tip-col.show{opacity:1;transform:none;}
+  .tip-col.kw-tip{border-left:3px solid #b5d98a;}
+  .tip-col.pinned{box-shadow:0 0 0 2px #9fc3dd,0 14px 32px rgba(0,0,0,.55);}
+  .tip-col.kw-tip.pinned{box-shadow:0 0 0 2px #b5d98a,0 14px 32px rgba(0,0,0,.55);}
+  .tip-col.pinned::after{content:'📌';position:absolute;top:-10px;right:-6px;font-size:14px;}
+  .tip-tt{font-family:var(--mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:#9fc3dd;margin-bottom:8px;}
+  .tip-col.kw-tip .tip-tt{color:#b5d98a;}
+  .tip-cmd{font-family:var(--mono);font-size:12px;color:#e8c9a0;margin-top:9px;display:block;word-break:break-word;}
+  .tip-more{font-family:var(--mono);font-size:10.5px;color:#8b8f8a;margin-top:9px;text-transform:uppercase;letter-spacing:.08em;}
+  .tip-sec{margin-top:10px;padding-top:8px;border-top:1px dashed rgba(255,255,255,.12);font-size:13px;color:rgba(255,255,255,.66);}
+  .tip-sec-lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.32);}
+  .tip-cmp{margin-top:9px;padding-top:8px;border-top:1px dashed rgba(255,255,255,.12);font-family:var(--mono);font-size:11px;}
+  .tip-cmp-ln{color:#9fc3dd;text-decoration:none;border-bottom:1px dotted rgba(159,195,221,.5);margin-right:6px;}
+  .tip-cmp-ln:hover{color:#c8eaf8;border-bottom-color:#c8eaf8;}
+  /* interactive refs within tooltip columns */
+  .tt-ref{font-family:var(--mono);font-size:12px;color:#9fc3dd;cursor:help;border-bottom:1px dotted rgba(159,195,221,.5);}
+  .tt-ref:hover{color:#c8eaf8;border-bottom-color:#c8eaf8;}
+  .tt-kw{font-family:var(--mono);font-size:12px;color:#b5d98a;cursor:help;border-bottom:1px dotted rgba(181,217,138,.5);}
+  .tt-kw:hover{color:#d0f0a5;border-bottom-color:#d0f0a5;}
+  .kw[data-kw]{cursor:help;}
+
+  /* legend */
+  .leg{border:1px solid var(--rule); background:#fff; padding:13px 15px; margin-bottom:9px; scroll-margin-top:80px; border-left:4px solid var(--neu);}
+  .leg.def{border-left-color:var(--def);} .leg.atk{border-left-color:var(--atk);}
+  .leg:target{background:#FFF7E8; border-left-width:6px;}
+  .leg h3{font-family:var(--mono); font-weight:600; font-size:16.5px; margin:0 0 2px; display:flex; gap:9px; align-items:baseline; flex-wrap:wrap;}
+  .leg h3 .tag{font-family:var(--display); font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--neu); border:1px solid var(--rule); padding:1px 6px;}
+  .leg .r{font-size:15.5px; line-height:1.6; margin:6px 0 0;}
+  .leg .c{font-family:var(--mono); font-size:13px; color:var(--ink); background:var(--paper-2); padding:7px 10px; margin:8px 0 0; word-break:break-word;}
+  .leg .c b{color:var(--def);}
+  .leg .g{font-size:14px; color:var(--ink-soft); margin:8px 0 0; padding-top:7px; border-top:1px dashed var(--rule);}
+  .leg .g b{font-family:var(--display); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--neu);}
+  .leg .g .k{font-family:var(--mono); font-size:11.5px; background:var(--paper-2); padding:0 4px;}
+  .leg .cmp{font-size:13.5px; color:var(--ink-soft); margin:8px 0 0; padding-top:7px; border-top:1px dashed var(--rule);}
+  .leg .cmp b{font-family:var(--display); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--neutral); margin-right:6px;}
+  .cmp-ln{font-family:var(--mono); font-size:12.5px; color:var(--def); text-decoration:none; border-bottom:1px dotted var(--def); margin-right:5px;}
+  .cmp-ln:hover{background:var(--def-bg);}
+  .leg-class{font-family:var(--display); font-weight:700; font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--neu); margin:22px 0 8px; border-bottom:1px solid var(--rule); padding-bottom:5px;}
+  .src-note{font-family:var(--mono); font-size:11.5px; color:var(--neu); background:var(--neu-bg); border:1px solid var(--rule); padding:9px 12px; margin:0 0 18px; line-height:1.55;}
+
+  footer{margin-top:46px; padding-top:18px; border-top:3px solid var(--ink); font-family:var(--mono); font-size:12.5px; color:var(--neu); line-height:1.7;}
+
+  /* ===== TOP NAV ===== */
+  .topnav{display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:16px 0 0;}
+  .topnav a{font-family:var(--display); font-weight:600; font-size:13px; letter-spacing:.04em; text-transform:uppercase; text-decoration:none; color:var(--ink-soft); border:1px solid var(--rule); background:#fff; padding:8px 14px; border-radius:6px;}
+  .topnav a:hover{border-color:var(--ink); color:var(--ink);}
+  .topnav a.cur{background:var(--ink); color:#fff; border-color:var(--ink);}
+
+  /* ===== SEARCH BAR + AUTOCOMPLETE ===== */
+  .controls{position:sticky; top:0; z-index:30; background:var(--paper); padding:12px 0 10px; margin-bottom:14px; border-bottom:1px solid var(--rule);}
+  .controls .filters{position:static; border-bottom:none; padding:10px 0 0; margin-bottom:0;}
+  .searchwrap{position:relative; max-width:560px;}
+  #search{width:100%; font-family:var(--body); font-size:16px; color:var(--ink); background:#fff; border:2px solid var(--rule); border-radius:9px; padding:13px 42px 13px 16px; outline:none;}
+  #search:focus{border-color:var(--def);}
+  #search::placeholder{color:#9aa0a4;}
+  .search-ico{position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--neu); font-family:var(--mono); font-size:15px; pointer-events:none;}
+  .ac{position:absolute; left:0; right:0; top:calc(100% + 5px); background:#fff; border:1px solid var(--rule); border-radius:9px; box-shadow:0 12px 34px rgba(0,0,0,.16); overflow:hidden; display:none; z-index:40;}
+  .ac.open{display:block;}
+  .ac-item{display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; border-bottom:1px solid var(--paper-2);}
+  .ac-item:last-child{border-bottom:none;}
+  .ac-item:hover,.ac-item.sel{background:var(--def-bg);}
+  .ac-item .nm{font-family:var(--display); font-weight:600; font-size:14.5px; color:var(--ink); flex:1;}
+  .ac-item .nm small{font-family:var(--body); font-weight:400; color:var(--ink-soft);}
+  .ac-item .badge{font-family:var(--mono); font-size:9.5px; letter-spacing:.06em; text-transform:uppercase; padding:3px 7px; border-radius:4px; background:var(--neu-bg); color:var(--neu); white-space:nowrap;}
+  .ac-item .badge.def{background:var(--def-bg); color:var(--def);}
+  .ac-item .badge.atk{background:var(--atk-bg); color:var(--atk);}
+  .ac-empty{padding:14px; font-family:var(--body); font-size:14px; color:var(--neu);}
+
+  /* flash highlight when jumping to an entry */
+  @keyframes flashbg{0%{background:#FFE9A8;}100%{background:transparent;}}
+  .flash{animation:flashbg 1.6s ease-out;}
+  .kw.flash,.leg.flash{animation:flashbg 1.6s ease-out;}
+
+  /* ===== MOBILE / RESPONSIVE ===== */
+  @media (max-width:760px){
+    body{font-size:16px;}
+    .wrap{padding:0 16px 80px;}
+    header.top{padding:30px 0 20px;}
+    .cards{grid-template-columns:repeat(auto-fill,minmax(176px,1fr)); gap:16px;}
+    .kwgrid{grid-template-columns:1fr;}
+  }
+  @media (hover:none){
+    /* touch devices: chained hover tooltips can't work — rely on tapping → legenda */
+    #tip-chain{display:none !important;}
+    .c-title,.chip,.el,.kw[data-kw]{cursor:pointer;}
+  }
+  @media (max-width:430px){
+    .cards{grid-template-columns:1fr 1fr; gap:11px;}
+    .c-art{height:112px;}
+    .c-art-wm{font-size:92px;}
+  }
+
+  /* ===== COMPENDIO (bundled) ===== */
+
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --paper:#F4F5F2; --paper-2:#EAECE6; --ink:#191C1F; --ink-soft:#3C4248; --rule:#C9CDC4;
+    --def:#27597C; --def-bg:#E4EDF3; --atk:#A8472A; --atk-bg:#F2E4DD; --neutral:#6B6256; --neutral-bg:#ECE7DD;
+    --display:'Space Grotesk',system-ui,sans-serif;
+    --body:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+
+  .cover{border-bottom:3px solid var(--ink); padding:40px 0 30px; margin-bottom:8px;}
+  .kicker{font-family:var(--mono); font-size:12px; letter-spacing:.22em; text-transform:uppercase; color:var(--neutral); margin:0 0 14px;}
+  .cover h1{font-family:var(--display); font-weight:700; font-size:clamp(34px,6.4vw,64px); line-height:.98; letter-spacing:-.02em; margin:0;}
+  .cover h1 .slash{color:var(--def);}
+  .cover .sub{font-family:var(--display); font-weight:500; font-size:clamp(16px,2.4vw,21px); color:var(--ink-soft); margin:16px 0 0;}
+  .ver{display:inline-flex; gap:12px; flex-wrap:wrap; margin-top:24px; font-family:var(--mono); font-size:12px;}
+  .ver span{border:1px solid var(--rule); padding:5px 10px; background:#fff; text-transform:uppercase; letter-spacing:.08em;}
+  .howto{background:var(--paper-2); border:1px solid var(--rule); border-left:5px solid var(--ink); padding:14px 18px; margin:20px 0 0; font-size:15.5px;}
+  .howto b{font-family:var(--display); text-transform:uppercase; font-size:12px; letter-spacing:.1em; color:var(--ink); display:block; margin-bottom:6px;}
+
+  .toc-wrap{padding:26px 0 6px; border-bottom:1px solid var(--rule);}
+  .toc-wrap h2{font-family:var(--display); font-weight:700; font-size:13px; letter-spacing:.18em; text-transform:uppercase; margin:0 0 12px; display:flex; gap:10px; align-items:center;}
+  .toc-wrap h2 .n{font-family:var(--mono); font-size:12px; color:#fff; background:var(--ink); padding:2px 8px;}
+  .toc{columns:2; column-gap:34px; font-family:var(--body); font-size:15px; margin:0;}
+  .toc a{color:var(--ink); text-decoration:none; display:flex; gap:9px; padding:5px 0; border-bottom:1px dotted var(--rule); break-inside:avoid;}
+  .toc a:hover{color:var(--def);}
+  .toc a .tn{font-family:var(--mono); font-size:13px; color:var(--neutral); min-width:22px;}
+
+  .chap{display:grid; grid-template-columns:222px minmax(0,1fr); gap:30px; padding:34px 0; border-bottom:1px solid var(--rule); align-items:start; scroll-margin-top:64px;}
+  .margin{display:flex; flex-direction:column; gap:11px; padding-top:42px;}
+  .margin-note{font-family:var(--display); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--neutral); border-top:1px dashed var(--rule); padding-top:8px;}
+  .bodycol h2.ch{font-family:var(--display); font-weight:700; font-size:24px; letter-spacing:-.01em; margin:0 0 4px; display:flex; align-items:baseline; gap:12px;}
+  .bodycol h2.ch .n{font-family:var(--mono); font-size:15px; color:#fff; background:var(--ink); padding:3px 10px; align-self:center;}
+  .lede{font-size:18.5px; color:var(--ink-soft); margin:8px 0 14px;}
+
+  .secsub{font-family:var(--display); font-weight:600; font-size:16px; margin:22px 0 4px; color:var(--ink); display:flex; gap:10px; align-items:baseline; scroll-margin-top:64px;}
+  .secsub .sn{font-family:var(--mono); font-size:14px; color:var(--neutral);}
+
+  .rule{display:grid; grid-template-columns:60px minmax(0,1fr); gap:14px; padding:8px 0; align-items:start; scroll-margin-top:64px;}
+  .rule .rn{font-family:var(--mono); font-weight:600; font-size:13.5px; color:var(--def); padding-top:2px; letter-spacing:.01em;}
+  .rule.atk .rn{color:var(--atk);}
+  .rule.neu .rn{color:var(--neutral);}
+  .rule .rt{margin:0;}
+  .rule .rt p{margin:0 0 8px;}
+  .rule:target .rt{background:#FFF7E8; box-shadow:0 0 0 6px #FFF7E8;}
+  .sub{list-style:lower-alpha; margin:6px 0 8px; padding-left:24px;}
+  .sub li{margin:0 0 6px;}
+  .ex{border-left:3px solid var(--rule); background:var(--paper-2); padding:9px 13px; margin:9px 0; font-size:15px; color:var(--ink-soft);}
+  .ex .exl{font-family:var(--display); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--neutral); display:block; margin-bottom:4px;}
+  .ex.mono,.ex .mono{font-family:var(--mono);}
+  .xref{font-family:var(--mono); font-size:.84em; color:var(--def); text-decoration:none; white-space:nowrap; border-bottom:1px dotted var(--def);}
+  .xref:hover{background:var(--def-bg);}
+
+  .mono{font-family:var(--mono); font-size:.92em;}
+  .t-def{color:var(--def); font-weight:600;}
+  .t-atk{color:var(--atk); font-weight:600;}
+  b{font-weight:600;}
+
+  .rec{border:1px solid var(--rule); background:#fff; padding:10px 11px 11px; font-family:var(--mono);}
+  .rec .ac{font-weight:600; font-size:15px; letter-spacing:.02em; color:var(--ink); display:flex; align-items:baseline; justify-content:space-between; gap:8px;}
+  .rec .ac .tag{font-size:9px; letter-spacing:.12em; color:var(--neutral); text-transform:uppercase;}
+  .rec .ex2{font-size:11.5px; line-height:1.4; color:var(--def); margin-top:5px; font-weight:500;}
+  .rec .gl{font-family:var(--body); font-size:13px; line-height:1.45; color:var(--ink-soft); margin-top:6px;}
+  .rec.atk{border-left:4px solid var(--atk);} .rec.atk .ex2{color:var(--atk);}
+  .rec.def{border-left:4px solid var(--def);}
+  .rec.neu{border-left:4px solid var(--neutral);} .rec.neu .ex2{color:var(--neutral);}
+
+  .callout{border:1px solid var(--rule); background:var(--neutral-bg); padding:14px 16px; margin:14px 0; border-left:5px solid var(--neutral);}
+  .callout.engine{background:var(--paper-2); border-left-color:var(--ink);}
+  .callout.atk{background:var(--atk-bg); border-left-color:var(--atk);}
+  .callout .lab{font-family:var(--display); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--neutral); margin-bottom:6px;}
+  .callout.engine .lab{color:var(--ink);} .callout.atk .lab{color:var(--atk);}
+  .callout p:last-child{margin-bottom:0;}
+
+  .seq{font-family:var(--mono); font-size:13.5px; background:#fff; border:1px solid var(--rule); padding:12px 14px; margin:12px 0; line-height:1.95;}
+  .seq .arr{color:var(--neutral);}
+  .seq .st{display:inline-block; background:var(--ink); color:#fff; border-radius:3px; padding:0 6px; margin-right:4px; font-size:11px;}
+
+  table.tbl{width:100%; border-collapse:collapse; margin:10px 0 16px; font-size:14.5px;}
+  table.tbl th,table.tbl td{border:1px solid var(--rule); padding:8px 10px; text-align:left; vertical-align:top;}
+  table.tbl th{font-family:var(--display); font-size:11px; letter-spacing:.08em; text-transform:uppercase; background:var(--paper-2);}
+  table.tbl td .mono{font-size:12.5px;}
+
+  hr.heavy{border:none; border-top:3px solid var(--ink); margin:0;}
+
+  @media (max-width:760px){
+    body{font-size:16.5px;}
+    .wrap{padding:0 16px 80px;}
+    .chap{grid-template-columns:1fr; gap:14px; padding:24px 0;}
+    .margin{flex-direction:column; gap:10px; padding-top:0; margin-top:6px; border-top:1px dashed var(--rule); padding-top:14px;}
+    .toc{columns:1;}
+    .rule{grid-template-columns:50px minmax(0,1fr); gap:10px;}
+    .bodycol h2.ch{font-size:21px;}
+    table.tbl{font-size:13.5px;}
+    table.tbl th,table.tbl td{padding:6px 8px;}
+    .seq{font-size:12.5px;}
+  }
+
+</style>
+</head>
+<body>
+<div id="tip-chain"></div>
+<div class="wrap" id="top">
+
+  <nav class="topnav">
+    <a class="cur" href="#top">▣ Carte &amp; Legenda</a>
+    <a href="#compendio">▤ Compendio AD</a>
+    <a href="diagramma.html">◆ Diagramma di flusso</a>
+  </nav>
+
+  <header class="top">
+    <p class="kicker">Carte + Legenda AD · v0.2 — la carta dice il processo, lo specchietto dice cos'è davvero</p>
+    <h1>ROOT <span class="s">/</span> OF <span class="s">/</span> TRUST</h1>
+    <p>Passa il puntatore su un <b>nome-carta</b> o su un <b>[elemento]</b> nel testo per la sintesi AD reale; passa sulle <b>chip-keyword</b> per il significato del termine fuori dal gioco. Clicca il nome (o «→ legenda») per la voce completa. Fonti: MOD&nbsp;3.3.</p>
+    <div class="legend-bar">
+      <span class="d">Blu · Domain Admin</span><span class="a">Rame · Threat Actor</span><span class="n">Bruno · Motore neutro</span>
+      <span>Orb «S» = elemento di sistema</span><span>Hover nome/[elem] = carta AD · Hover chip = keyword AD</span>
+    </div>
+  </header>
+
+  <!-- KEYWORD GLOSSARY -->
+  <h2 class="sec"><span class="n">A</span> Glossario parole-chiave (meccaniche di gioco)</h2>
+  <p class="sec-note">Vocabolario dei processi di gioco. Le carte vi rimandano con le chip in fondo. Per il significato reale del termine, usa invece lo specchietto/legenda.</p>
+  <div class="kwgrid" id="kwgrid"></div>
+
+  <!-- CARDS -->
+  <h2 class="sec"><span class="n">B</span> Carte</h2>
+  <div class="controls">
+    <div class="searchwrap">
+      <input id="search" type="text" placeholder="Cerca una carta, un termine AD o una keyword…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Cerca">
+      <span class="search-ico">⌕</span>
+      <div class="ac" id="ac"></div>
+    </div>
+    <div class="filters" id="filters">
+      <button data-f="all" class="on">Tutte</button>
+      <button data-f="PROTOCOL">Protocol</button>
+      <button data-f="DIRECTORY">Directory</button>
+      <button data-f="IDENTITY">Identity</button>
+      <button data-f="ACCESS">Access</button>
+      <button data-f="POLICY">Policy</button>
+      <button data-f="TOPOLOGY">Topology</button>
+      <button data-f="THREAT">Threat</button>
+      <span class="count" id="count"></span>
+    </div>
+  </div>
+  <div class="cards" id="cards"></div>
+  <div id="nohits" class="ac-empty" style="display:none;">Nessun risultato per la ricerca.</div>
+
+  <!-- LEGEND -->
+  <h2 class="sec"><span class="n">C</span> Legenda — Active Directory reale</h2>
+  <p class="sec-note">Sintesi di ogni termine così com'è in AD puro (non in-game). Struttura: <b>Ruolo &amp; funzionamento</b> · <b>Comandi/strumenti</b> · <b>In gioco</b> (il ponte verso il processo della carta).</p>
+  <div class="src-note">Fonte: materiale del MOD 3.3 (AD DS — BERNABEI). Le voci della classe THREAT non sono nel materiale d'esame: descrivono la tecnica d'attacco reale che ciascuna carta modella, come contraltare offensivo del contenuto difensivo del modulo.</div>
+  <div id="legend"></div>
+
+  <footer>
+    ROOT OF TRUST — v0.2 · carte (processo) + legenda (AD reale) · costi e Noise restano segnaposto.<br>
+    Criterio di accettazione: ogni specchietto deve essere fedele al comportamento reale di Active Directory.
+  </footer>
+
+</div>
+
+<hr class="heavy" style="max-width:1180px;margin:0 auto;">
+
+<div class="wrap" id="compendio">
+
+  
+
+  <!-- COVER -->
+  <header class="cover" id="compendio-top">
+    <p class="kicker">Active Directory Domain Services · MOD 3.3 (Bernabei) · compendio dei processi v0.3</p>
+    <h1>Active&nbsp;Directory <span class="slash">/</span> Compendio dei processi</h1>
+    <p class="sub">La materia di studio in forma di documento di riferimento: <em>cosa</em> è ogni elemento, <em>in che ordine</em> agiscono i processi e <em>come</em> interagiscono fra loro.</p>
+    <div class="ver">
+      <span>Soggetto: Active Directory DS (reale)</span>
+      <span>Struttura: rulebook Null&nbsp;Signal</span>
+      <span>Numerazione: Cap.Sez.Regola</span>
+    </div>
+    <div class="howto">
+      <b>Come si legge questo documento</b>
+      È un riferimento, non una lettura lineare. Le regole sono numerate <span class="mono">Capitolo.Sezione.Regola</span> (es. <span class="mono">5.3.1</span>); i rimandi appaiono come <span class="xref">→ 6.4</span>. I capitoli seguono <b>l'ordine reale di applicazione dei processi</b>: identità → autenticazione → autorizzazione → policy → replica → operazioni. Il margine sinistro raccoglie gli specchietti-acronimo. La galleria <a class="xref" href="#top">▣ Carte &amp; Legenda</a> è un'estensione didattica di questo materiale: ogni termine della legenda rimanda al passaggio di questo compendio in cui quel processo è funzionale.
+    </div>
+  </header>
+
+  <!-- TOC -->
+  <div class="toc-wrap">
+    <h2><span class="n">00</span> Indice dei capitoli</h2>
+    <nav class="toc">
+      <a href="#sec-1"><span class="tn">1</span> Concetti e modello di AD</a>
+      <a href="#sec-2"><span class="tn">2</span> Anatomia di un oggetto</a>
+      <a href="#sec-3"><span class="tn">3</span> Struttura logica e fisica</a>
+      <a href="#sec-4"><span class="tn">4</span> Identità: utenti, computer, gruppi</a>
+      <a href="#sec-5"><span class="tn">5</span> Autenticazione (1° processo)</a>
+      <a href="#sec-6"><span class="tn">6</span> Autorizzazione (2° processo)</a>
+      <a href="#sec-7"><span class="tn">7</span> Group Policy: ordine di applicazione</a>
+      <a href="#sec-8"><span class="tn">8</span> Replica e topologia</a>
+      <a href="#sec-9"><span class="tn">9</span> Ruoli FSMO</a>
+      <a href="#sec-10"><span class="tn">10</span> Operazioni e disaster recovery</a>
+      <a href="#sec-11"><span class="tn">11</span> Trust e multi-dominio</a>
+      <a href="#sec-12"><span class="tn">12</span> Modello delle minacce</a>
+      <a href="#sec-13"><span class="tn">13</span> Rilevamento e Incident Response</a>
+      <a href="#sec-14"><span class="tn">14</span> Glossario-acronimi</a>
+      <a href="#sec-15"><span class="tn">15</span> Appendice: flussi end-to-end</a>
+    </nav>
+  </div>
+
+  <!-- ===================== 1 ===================== -->
+  <section class="chap" id="sec-1">
+    <div class="margin">
+      <div class="margin-note">Cap. 1 · acronimi</div>
+      <div class="rec neu"><div class="ac">AD DS<span class="tag">core</span></div><div class="ex2">Active Directory Domain Services</div><div class="gl">Database gerarchico + servizi d'identità entro un confine amministrativo (il dominio).</div></div>
+      <div class="rec neu"><div class="ac">SID</div><div class="ex2">Security Identifier</div><div class="gl">Valore univoco e immutabile di ogni security principal.</div></div>
+      <div class="rec neu"><div class="ac">IAM</div><div class="ex2">Identity &amp; Access Management</div><div class="gl">Gestione centralizzata di identità e accessi; principio del least privilege.</div></div>
+    </div>
+    <div class="bodycol">
+      <h2 class="ch"><span class="n">1</span> Concetti e modello di Active Directory</h2>
+      <p class="lede">Active Directory è un servizio di directory: un database gerarchico replicato, più i servizi che lo usano per autenticare, autorizzare e configurare.</p>
+
+      <div class="secsub" id="s-1-1"><span class="sn">1.1</span> Servizio di directory</div>
+      <div class="rule"><div class="rn" id="r-1-1-1">1.1.1</div><div class="rt"><p>AD DS conserva oggetti (utenti, computer, gruppi, OU, policy) e fornisce i servizi che li interrogano e li applicano: autenticazione (Kerberos/NTLM), autorizzazione (Access Check), criteri (Group Policy), replica.</p></div></div>
+      <div class="rule"><div class="rn" id="r-1-1-2">1.1.2</div><div class="rt"><p>Il confine amministrativo elementare è il <b>dominio</b>; il confine di sicurezza massimo è la <b>foresta</b> <span class="xref">→ 3.1</span>.</p></div></div>
+
+      <div class="secsub" id="s-1-2"><span class="sn">1.2</span> Il modello a grafo</div>
+      <div class="rule"><div class="rn" id="r-1-2-1">1.2.1</div><div class="rt"><p>AD si legge come un <b>grafo</b>: gli oggetti sono nodi, le relazioni sono archi (appartenenza a gruppo, ACE su un oggetto, sessione attiva, trust). La postura di sicurezza è la somma dei percorsi percorribili nel grafo.</p></div></div>
+      <div class="rule"><div class="rn" id="r-1-2-2">1.2.2</div><div class="rt"><p>Comprendere AD significa seguire <b>l'ordine</b> in cui gli archi si attivano: prima si è un'identità, poi ci si autentica, poi si è autorizzati <span class="xref">→ 15.1</span>.</p></div></div>
+
+      <div class="secsub" id="s-1-3"><span class="sn">1.3</span> Security principal e SID</div>
+      <div class="rule"><div class="rn" id="r-1-3-1">1.3.1</div><div class="rt"><p>Un <b>security principal</b> (User, Computer, gruppo Security) possiede un <b>SID</b> univoco e immutabile. Solo i principal hanno un SID e possono comparire in un token o in una ACE.</p></div></div>
+      <div class="rule"><div class="rn" id="r-1-3-2">1.3.2</div><div class="rt"><p>Il sistema confronta <b>SID</b>, non nomi: rinominare un oggetto non cambia i suoi accessi; ricrearlo con lo stesso nome gli dà un SID nuovo e quindi accessi diversi.</p></div></div>
+
+      <div class="secsub" id="s-1-4"><span class="sn">1.4</span> IAM e least privilege</div>
+      <div class="rule"><div class="rn" id="r-1-4-1">1.4.1</div><div class="rt"><p>AD è lo strumento IAM dell'organizzazione: ogni accesso dovrebbe derivare dal ruolo, non da assegnazioni dirette, secondo il principio del <b>privilegio minimo</b> <span class="xref">→ 4.4</span>.</p></div></div>
+
+      <div class="callout engine"><div class="lab">I due processi che reggono tutto</div><p>Quasi ogni argomento del modulo è un dettaglio di due processi in sequenza: <b>autenticazione</b> (provare chi sei → <span class="xref">→ 5</span>) e <b>autorizzazione</b> (cosa puoi fare con ciò che sei → <span class="xref">→ 6</span>). Tutto il resto (struttura, policy, replica) li abilita o li propaga.</p></div>
+    </div>
+  </section>
+
+  <!-- ===================== 2 ===================== -->
+  <section class="chap" id="sec-2">
+    <div class="margin">
+      <div class="margin-note">Cap. 2 · acronimi</div>
+      <div class="rec neu"><div class="ac">DN / RDN</div><div class="ex2">Distinguished / Relative Distinguished Name</div><div class="gl"><span class="mono">CN=Rossi,OU=Users,DC=ifts,DC=local</span></div></div>
+      <div class="rec neu"><div class="ac">UPN / SAM</div><div class="ex2">User Principal Name / SAMAccountName</div><div class="gl"><span class="mono">m.rossi@ifts.local</span> · <span class="mono">IFTS\m.rossi</span></div></div>
+      <div class="rec neu"><div class="ac">GUID</div><div class="ex2">Globally Unique Identifier</div><div class="gl">Identità immutabile dell'oggetto, valida in tutta la foresta.</div></div>
+    </div>
+    <div class="bodycol">
+      <h2 class="ch"><span class="n">2</span> Anatomia di un oggetto di directory</h2>
+      <p class="lede">AD è un database: ogni elemento è un oggetto, ogni proprietà un attributo, ogni tipo è definito dallo Schema.</p>
+
+      <div class="secsub" id="s-2-1"><span class="sn">2.1</span> Oggetti e attributi</div>
+      <div class="rule"><div class="rn" id="r-2-1-1">2.1.1</div><div class="rt"><p>Ogni oggetto è un insieme di attributi (es. un User ha <span class="mono">sAMAccountName</span>, <span class="mono">memberOf</span>, <span class="mono">objectSid</span>). Gli attributi disponibili dipendono dalla classe dell'oggetto.</p></div></div>
+
+      <div class="secsub" id="s-2-2"><span class="sn">2.2</span> Nomi: DN, RDN, CN, UPN, SAM</div>
+      <div class="rule"><div class="rn" id="r-2-2-1">2.2.1</div><div class="rt"><p>Il <b>DN</b> è il percorso univoco dell'oggetto nell'albero; l'<b>RDN</b> è il segmento relativo (es. <span class="mono">CN=Rossi</span>).</p></div></div>
+      <div class="rule"><div class="rn" id="r-2-2-2">2.2.2</div><div class="rt"><p>Un utente ha due forme di logon: <b>UPN</b> (stile email) e <b>SAMAccountName</b> (pre-2000). Vanno tenute coerenti.</p></div></div>
+
+      <div class="secsub" id="s-2-3"><span class="sn">2.3</span> Schema e classi di oggetti</div>
+      <div class="rule"><div class="rn" id="r-2-3-1">2.3.1</div><div class="rt"><p>Lo <b>Schema</b> definisce quali classi e attributi possono esistere nella foresta. È unico e replicato a tutti i DC <span class="xref">→ 3.3</span>; modificarlo è un'operazione forest-wide e irreversibile.</p></div></div>
+
+      <div class="secsub" id="s-2-4"><span class="sn">2.4</span> Identificatori: SID e GUID</div>
+      <div class="rule"><div class="rn" id="r-2-4-1">2.4.1</div><div class="rt"><p>Il <b>SID</b> identifica il principal ai fini di sicurezza (entra nel token e nelle ACE <span class="xref">→ 6</span>); il <b>GUID</b> identifica l'oggetto in modo immutabile in tutta la foresta.</p></div></div>
+      <div class="rule"><div class="rn" id="r-2-4-2">2.4.2</div><div class="rt"><p>Il SID è composto dal SID di dominio + un <b>RID</b> assegnato dal RID Master <span class="xref">→ 9.1</span>.</p></div></div>
+    </div>
+  </section>
+
+  <!-- ===================== 3 ===================== -->
+  <section class="chap" id="sec-3">
+    <div class="margin">
+      <div class="margin-note">Cap. 3 · acronimi</div>
+      <div class="rec def"><div class="ac">DC</div><div class="ex2">Domain Controller</div><div class="gl">Server con ruolo AD DS. Detiene <span class="mono">NTDS.DIT</span> e <span class="mono">SYSVOL</span>; ospita il KDC.</div></div>
+      <div class="rec def"><div class="ac">OU</div><div class="ex2">Organizational Unit</div><div class="gl">Contenitore che <b>supporta GPO e delega</b>. Il Container di default no.</div></div>
+      <div class="rec neu"><div class="ac">GC</div><div class="ex2">Global Catalog (PAS)</div><div class="gl">Replica parziale di tutti gli oggetti della foresta; ricerche cross-dominio.</div></div>
+    </div>
+    <div class="bodycol">
+      <h2 class="ch"><span class="n">3</span> Struttura logica e fisica</h2>
+      <p class="lede">La struttura logica organizza gli oggetti; la struttura fisica governa dove avviene l'autenticazione e come si propaga la replica.</p>
+
+      <div class="secsub" id="s-3-1"><span class="sn">3.1</span> Forest — confine di sicurezza</div>
+      <div class="rule"><div class="rn" id="r-3-1-1">3.1.1</div><div class="rt"><p>La <b>Forest</b> è il confine massimo di sicurezza e di replica. Contiene uno o più alberi; Schema e Configuration sono comuni a tutti i DC della foresta <span class="xref">→ 3.3</span>.</p></div></div>
+
+      <div class="secsub" id="s-3-2"><span class="sn">3.2</span> Tree, Domain, Domain Controller</div>
+      <div class="rule"><div class="rn" id="r-3-2-1">3.2.1</div><div class="rt"><p>Un <b>Tree</b> è uno o più <b>Domain</b> con namespace DNS contiguo. Il dominio è confine di policy e di replica del proprio Domain NC.</p></div></div>
+      <div class="rule"><div class="rn" id="r-3-2-2">3.2.2</div><div class="rt"><p>Il <b>Domain Controller</b> è il server che ospita AD DS: database <span class="mono">NTDS.DIT</span>, cartella <span class="mono">SYSVOL</span>, servizio Kerberos (KDC <span class="xref">→ 5.3</span>). Best practice: ≥2 DC per dominio (ridondanza <span class="xref">→ 8.1</span>).</p></div></div>
+      <div class="rule"><div class="rn" id="r-3-2-3">3.2.3</div><div class="rt"><p>Un <b>RODC</b> è una copia in sola lettura per sedi insicure: replica le password solo secondo la Password Replication Policy.</p></div></div>
+
+      <div class="secsub" id="s-3-3"><span class="sn">3.3</span> Partizioni e Global Catalog</div>
+      <div class="rule"><div class="rn" id="r-3-3-1">3.3.1</div><div class="rt"><p>Il database è diviso in partizioni (Naming Context):</p>
+        <ol class="sub"><li><b>Schema</b> e <b>Configuration</b> — replicate a tutta la foresta.</li><li><b>Domain NC</b> — utenti, gruppi, OU, computer; replicato ai DC del dominio.</li></ol></div></div>
+      <div class="rule"><div class="rn" id="r-3-3-2">3.3.2</div><div class="rt"><p>Il <b>Global Catalog</b> contiene una replica parziale (PAS) di tutti gli oggetti della foresta per ricerche e logon cross-dominio; ospita i gruppi Universal <span class="xref">→ 4.3</span>.</p></div></div>
+
+      <div class="secsub" id="s-3-4"><span class="sn">3.4</span> OU e Container</div>
+      <div class="rule"><div class="rn" id="r-3-4-1">3.4.1</div><div class="rt"><p>L'<b>OU</b> è l'unico contenitore che supporta <b>Group Policy</b> <span class="xref">→ 7.2</span> e <b>delega amministrativa</b>. Vi si spostano gli oggetti dai Container di default per poterli gestire.</p></div></div>
+      <div class="rule"><div class="rn" id="r-3-4-2">3.4.2</div><div class="rt"><p>La <b>delega</b> assegna diritti su una OU a identità non-admin modificando le ACE del contenitore — applicazione diretta del least privilege <span class="xref">→ 1.4</span>.</p></div></div>
+
+      <div class="secsub" id="s-3-5"><span class="sn">3.5</span> Site, Subnet, Site Link</div>
+      <div class="rule"><div class="rn" id="r-3-5-1">3.5.1</div><div class="rt"><p>Un <b>Site</b> rappresenta una porzione di rete fisica (gruppi di <b>Subnet</b> ben connesse). Le subnet associano il client al DC più vicino <span class="xref">→ 5.1</span>.</p></div></div>
+      <div class="rule"><div class="rn" id="r-3-5-2">3.5.2</div><div class="rt"><p>I <b>Site Link</b> (costo, intervallo) definiscono percorso e latenza della replica inter-sito <span class="xref">→ 8.2</span>.</p></div></div>
+    </div>
+  </section>
+
+  <!-- ===================== 4 ===================== -->
+  <section class="chap" id="sec-4">
+    <div class="margin">
+      <div class="margin-note">Cap. 4 · acronimi</div>
+      <div class="rec def"><div class="ac">IGDLA</div><div class="ex2">Identity · Global · Domain Local · Access</div><div class="gl">Ordine corretto di annidamento dei permessi.</div></div>
+      <div class="rec neu"><div class="ac">gMSA</div><div class="ex2">Group Managed Service Account</div><div class="gl">Account di servizio con password gestita da AD (240 bit, rotazione automatica).</div></div>
+    </div>
+    <div class="bodycol">
+      <h2 class="ch"><span class="n">4</span> Identità: utenti, computer, gruppi</h2>
+      <p class="lede">Gli oggetti che diventeranno SID nel token. Il modo in cui sono organizzati determina quali archi esisteranno.</p>
+
+      <div class="secsub" id="s-4-1"><span class="sn">4.1</span> Account User e Computer</div>
+      <div class="rule"><div class="rn" id="r-4-1-1">4.1.1</div><div class="rt"><p><b>User</b> e <b>Computer</b> sono security principal con SID. Al logon generano un Access Token <span class="xref">→ 6.1</span>. Il computer unito al dominio stabilisce una relazione di trust con AD ed è gestito centralmente.</p></div></div>
+
+      <div class="secsub" id="s-4-2"><span class="sn">4.2</span> Tipo: Security vs Distribution</div>
+      <div class="rule"><div class="rn" id="r-4-2-1">4.2.1</div><div class="rt"><p>Solo i gruppi <b>Security</b> hanno un SID e finiscono nel token: sono gli unici che concedono accesso. I gruppi <b>Distribution</b> servono solo a liste email e non incidono sull'autorizzazione.</p></div></div>
+
+      <div class="secsub" id="s-4-3"><span class="sn">4.3</span> Scope dei gruppi</div>
+      <div class="rule"><div class="rn" id="r-4-3-1">4.3.1</div><div class="rt"><p>Lo scope determina membri ammessi e impiego corretto:</p>
+        <table class="tbl"><tr><th>Scope</th><th>Membri</th><th>Uso</th></tr>
+        <tr><td><b>Global</b></td><td>solo stesso dominio</td><td>role group — raggruppa per ruolo</td></tr>
+        <tr><td><b>Domain Local</b></td><td>da qualsiasi dominio</td><td>rule group — riceve le ACE</td></tr>
+        <tr><td><b>Universal</b></td><td>qualsiasi dominio (nel GC)</td><td>foreste multi-dominio <span class="xref">→ 3.3</span></td></tr></table></div></div>
+
+      <div class="secsub" id="s-4-4"><span class="sn">4.4</span> IGDLA — ordine di annidamento</div>
+      <div class="rule"><div class="rn" id="r-4-4-1">4.4.1</div><div class="rt"><p>La catena corretta è <b>I → G → DL → A</b>: l'<b>Identità</b> entra in un gruppo <b>Global</b> (ruolo), il Global si annida in un <b>Domain Local</b> (regola), il Domain Local riceve l'<b>Access</b> (la ACE) sulla risorsa.</p></div></div>
+      <div class="rule"><div class="rn" id="r-4-4-2">4.4.2</div><div class="rt"><p>Separare «chi sei» (Global) da «cosa puoi fare» (Domain Local) rende gli accessi puliti e pochi. Le scorciatoie (ACE diretta a un utente, utenti in un Domain Local) creano archi sfruttabili <span class="xref">→ 12.3</span>.</p></div></div>
+
+      <div class="secsub" id="s-4-5"><span class="sn">4.5</span> Gruppi privilegiati e Special Identities</div>
+      <div class="rule"><div class="rn" id="r-4-5-1">4.5.1</div><div class="rt"><p>I <b>gruppi privilegiati</b> (Domain Admins, Enterprise Admins, Schema Admins) conferiscono diritti elevati; sono il bersaglio finale dell'escalation <span class="xref">→ 12.3</span>.</p></div></div>
+      <div class="rule"><div class="rn" id="r-4-5-2">4.5.2</div><div class="rt"><p>Le <b>Special Identities</b> (Authenticated Users, Everyone) hanno appartenenza dinamica gestita dal sistema e compaiono comunque nel token.</p></div></div>
+    </div>
+  </section>
+
+  <!-- ===================== 5 ===================== -->
+  <section class="chap" id="sec-5">
+    <div class="margin">
+      <div class="margin-note">Cap. 5 · acronimi</div>
+      <div class="rec neu"><div class="ac">KDC</div><div class="ex2">Key Distribution Center</div><div class="gl">Servizio Kerberos sul DC: emette TGT e TGS.</div></div>
+      <div class="rec neu"><div class="ac">TGT / TGS</div><div class="ex2">Ticket Granting Ticket / Service</div><div class="gl">«Prova che sei tu» / ticket per <em>una</em> risorsa.</div></div>
+      <div class="rec neu"><div class="ac">SPN</div><div class="ex2">Service Principal Name</div><div class="gl">Nome che identifica un servizio per cui si chiede un TGS.</div></div>
+      <div class="rec neu"><div class="ac">SRV</div><div class="ex2">Service Locator Record</div><div class="gl">Record DNS che indica dove sono i servizi del DC.</div></div>
+    </div>
+    <div class="bodycol">
+      <h2 class="ch"><span class="n">5</span> Autenticazione — il primo processo</h2>
+      <p class="lede">«Chi sei». Una sequenza precisa: trovare il DC, provare l'identità, ottenere i ticket. Solo dopo si parla di permessi.</p>
+
+      <div class="secsub" id="s-5-1"><span class="sn">5.1</span> Prerequisito: DNS/SRV individua il DC</div>
+      <div class="rule"><div class="rn" id="r-5-1-1">5.1.1</div><div class="rt"><p>Il client interroga il <b>DNS</b> per i record <b>SRV</b> e individua un DC del proprio Site. Senza risoluzione DNS non c'è logon di dominio: è il passo zero di ogni autenticazione.</p></div></div>
+
+      <div class="secsub" id="s-5-2"><span class="sn">5.2</span> Logon e credenziali</div>
+      <div class="rule"><div class="rn" id="r-5-2-1">5.2.1</div><div class="rt"><p>Al <b>logon</b> la LSA raccoglie le credenziali e avvia l'autenticazione (Kerberos se disponibile, NTLM come fallback <span class="xref">→ 5.6</span>). Esito riuscito → si costruirà il token <span class="xref">→ 6.1</span>.</p></div></div>
+
+      <div class="secsub" id="s-5-3"><span class="sn">5.3</span> Kerberos: AS-REQ → TGT</div>
+      <div class="rule"><div class="rn" id="r-5-3-1">5.3.1</div><div class="rt"><p>Il client invia <b>AS-REQ</b> al <b>KDC</b> con la pre-autenticazione (timestamp cifrato con l'hash della password). Il KDC valida e restituisce il <b>TGT</b> (AS-REP), cifrato con la chiave <span class="mono">krbtgt</span>.</p>
+        <div class="seq"><span class="st">1</span>client <span class="arr">──AS-REQ (pre-auth)──▶</span> KDC <span class="arr">──AS-REP (TGT)──▶</span> client</div></div></div>
+      <div class="rule"><div class="rn" id="r-5-3-2">5.3.2</div><div class="rt"><p>Il TGT certifica «sei autenticato» e permette di chiedere TGS senza reinserire la password. La sua durata è governata dalla policy Kerberos <span class="xref">→ 7.7</span>.</p></div></div>
+
+      <div class="secsub" id="s-5-4"><span class="sn">5.4</span> Kerberos: TGS-REQ → TGS</div>
+      <div class="rule"><div class="rn" id="r-5-4-1">5.4.1</div><div class="rt"><p>Presentando il TGT, il client invia <b>TGS-REQ</b> per uno <b>SPN</b>; il KDC restituisce un <b>TGS</b> valido per <em>quel</em> servizio, cifrato con la chiave del service account.</p>
+        <div class="seq"><span class="st">2</span>client <span class="arr">──TGS-REQ (TGT + SPN)──▶</span> KDC <span class="arr">──TGS-REP (TGS)──▶</span> client</div></div></div>
+
+      <div class="secsub" id="s-5-5"><span class="sn">5.5</span> Accesso al servizio: AP-REQ</div>
+      <div class="rule"><div class="rn" id="r-5-5-1">5.5.1</div><div class="rt"><p>Il client presenta il TGS al servizio (<b>AP-REQ</b>). Il servizio lo decifra con la propria chiave, ne estrae i SID e passa all'autorizzazione <span class="xref">→ 6.4</span>.</p>
+        <div class="seq"><span class="st">3</span>client <span class="arr">──AP-REQ (TGS)──▶</span> servizio <span class="arr">──▶ Access Check</span></div></div></div>
+
+      <div class="secsub" id="s-5-6"><span class="sn">5.6</span> NTLM (fallback legacy)</div>
+      <div class="rule"><div class="rn" id="r-5-6-1">5.6.1</div><div class="rt"><p><b>NTLM</b> è un protocollo challenge-response basato sull'hash della password, usato quando Kerberos/DNS non sono disponibili. È più debole: l'hash è riutilizzabile, abilitando furto e relay <span class="xref">→ 12.2</span>.</p></div></div>
+
+      <div class="callout engine"><div class="lab">Ordine, non opzioni</div><p>I tre passi <span class="mono">AS → TGS → AP</span> avvengono <em>sempre</em> in quest'ordine. Il Threat Actor li corrompe puntando esattamente a uno: rubare il TGT/TGS (Pass-the-Ticket), forgiare il TGT (Golden Ticket) o il TGS (Silver Ticket) <span class="xref">→ 12.5</span>.</p></div>
+    </div>
+  </section>
+
+  <!-- ===================== 6 ===================== -->
+  <section class="chap" id="sec-6">
+    <div class="margin">
+      <div class="margin-note">Cap. 6 · acronimi</div>
+      <div class="rec def"><div class="ac">DACL</div><div class="ex2">Discretionary ACL</div><div class="gl">Lista di ACE: chi può / non può. <b>Deny vince su Allow.</b></div></div>
+      <div class="rec def"><div class="ac">SACL</div><div class="ex2">System ACL</div><div class="gl">Auditing: registra gli accessi. Non concede nulla, ma <em>vede</em>.</div></div>
+      <div class="rec def"><div class="ac">ACE</div><div class="ex2">Access Control Entry</div><div class="gl">Singola regola Allow/Deny per un SID su un diritto.</div></div>
+    </div>
+    <div class="bodycol">
+      <h2 class="ch"><span class="n">6</span> Autorizzazione — il secondo processo</h2>
+      <p class="lede">«Cosa puoi fare». Costruito il token, ogni accesso è un confronto fra i SID del token e la DACL della risorsa.</p>
+
+      <div class="secsub" id="s-6-1"><span class="sn">6.1</span> Costruzione dell'Access Token</div>
+      <div class="rule"><div class="rn" id="r-6-1-1">6.1.1</div><div class="rt"><p>Al logon, l'<b>Access Token</b> si compone con: <b>SID dell'utente + SID di ogni gruppo</b> di cui è membro (catena IGDLA <span class="xref">→ 4.4</span>) + privilegi + Special Identities.</p></div></div>
+
+      <div class="secsub" id="s-6-2"><span class="sn">6.2</span> Aggiornamento del token</div>
+      <div class="rule"><div class="rn" id="r-6-2-1">6.2.1</div><div class="rt"><p>Il token <b>non si aggiorna da solo</b>: aggiungere un utente a un gruppo non ha effetto finché non esegue un <b>nuovo logon</b> che rigenera il token con i nuovi SID.</p>
+        <div class="ex"><span class="exl">Implicazione</span> È il motivo per cui dopo un cambio di membership «serve rifare il login»; ed è anche un passo obbligato per l'attaccante che si auto-aggiunge a un gruppo <span class="xref">→ 12.3</span>.</div></div></div>
+
+      <div class="secsub" id="s-6-3"><span class="sn">6.3</span> Security Descriptor, DACL, SACL, ACE</div>
+      <div class="rule"><div class="rn" id="r-6-3-1">6.3.1</div><div class="rt"><p>Ogni risorsa ha un <b>Security Descriptor</b> che contiene la <b>DACL</b> (chi accede) e la <b>SACL</b> (cosa si audita). La DACL è una lista ordinata di <b>ACE</b> Allow/Deny per SID.</p></div></div>
+
+      <div class="secsub" id="s-6-4"><span class="sn">6.4</span> L'algoritmo di Access Check</div>
+      <div class="rule"><div class="rn" id="r-6-4-1">6.4.1</div><div class="rt"><p><b>Regola madre.</b> Il sistema confronta i SID del token con le ACE della DACL:</p>
+        <ol class="sub"><li>le ACE <b>Deny</b> sono valutate per prime: un solo Deny corrispondente nega l'accesso;</li><li>l'accesso è concesso se i diritti richiesti sono coperti da ACE <b>Allow</b> e nessun Deny corrisponde.</li></ol></div></div>
+      <div class="rule"><div class="rn" id="r-6-4-2">6.4.2</div><div class="rt"><p>Casi limite: DACL <b>null</b> (assente) → accesso pieno al proprietario; DACL <b>vuota</b> → accesso negato a tutti.</p>
+        <div class="seq">token (SID…) <span class="arr">──▶</span> DACL: Deny? <span class="arr">─sì▶</span> NEGA · <span class="arr">─no▶</span> Allow? <span class="arr">─sì▶</span> CONCEDI</div></div></div>
+
+      <div class="secsub" id="s-6-5"><span class="sn">6.5</span> SACL e auditing</div>
+      <div class="rule"><div class="rn" id="r-6-5-1">6.5.1</div><div class="rt"><p>La <b>SACL</b> non concede nulla: definisce quali accessi generano un evento di audit. È il punto in cui l'autorizzazione diventa <b>visibile</b> al difensore <span class="xref">→ 13.1</span>.</p></div></div>
+    </div>
+  </section>
+
+  <!-- ===================== 7 ===================== -->
+  <section class="chap" id="sec-7">
+    <div class="margin">
+      <div class="margin-note">Cap. 7 · acronimi</div>
+      <div class="rec def"><div class="ac">GPO</div><div class="ex2">Group Policy Object</div><div class="gl">Impostazioni User/Computer. Collegabile a Site, Domain, OU (SDOU).</div></div>
+      <div class="rec def"><div class="ac">LSDOU</div><div class="ex2">Local · Site · Domain · OU</div><div class="gl">Ordine di applicazione. In conflitto vince <b>l'ultima</b>: l'OU.</div></div>
+      <div class="rec def"><div class="ac">RSoP / CSE</div><div class="ex2">Resultant Set of Policy / Client-Side Extensions</div><div class="gl">Effetto netto / componenti che applicano la policy sul client.</div></div>
+      <div class="rec def"><div class="ac">PSO</div><div class="ex2">Password Settings Object</div><div class="gl">Policy password granulare per gruppo/utente.</div></div>
+    </div>
+    <div class="bodycol">
+      <h2 class="ch"><span class="n">7</span> Group Policy — l'ordine di applicazione</h2>
+      <p class="lede">Le GPO configurano in massa utenti e computer. L'ordine in cui si applicano decide chi vince in caso di conflitto.</p>
+
+      <div class="secsub" id="s-7-1"><span class="sn">7.1</span> La GPO</div>
+      <div class="rule"><div class="rn" id="r-7-1-1">7.1.1</div><div class="rt"><p>Una <b>GPO</b> è un insieme di impostazioni User e/o Computer. Le GPO di dominio risiedono sui DC (in SYSVOL <span class="xref">→ 8.3</span>) e si applicano solo se collegate <span class="xref">→ 7.2</span>.</p></div></div>
+
+      <div class="secsub" id="s-7-2"><span class="sn">7.2</span> Link a SDOU</div>
+      <div class="rule"><div class="rn" id="r-7-2-1">7.2.1</div><div class="rt"><p>Il <b>link</b> aggancia una GPO a un <b>Site</b>, <b>Domain</b> o <b>OU</b> e ne definisce lo scope. Solo le OU (non i Container) ricevono GPO <span class="xref">→ 3.4</span>. Un link può essere disabilitato senza cancellare la GPO.</p></div></div>
+
+      <div class="secsub" id="s-7-3"><span class="sn">7.3</span> Ordine LSDOU</div>
+      <div class="rule"><div class="rn" id="r-7-3-1">7.3.1</div><div class="rt"><p>Le GPO si applicano in ordine <b>L-S-D-O-U</b>: Local, poi Site, poi Domain, poi le OU dalla più lontana alla più vicina all'oggetto. In conflitto <b>vince l'ultima applicata</b> (di norma l'OU).</p>
+        <div class="seq">Local <span class="arr">▶</span> Site <span class="arr">▶</span> Domain <span class="arr">▶</span> OU padre <span class="arr">▶</span> OU figlia <span class="arr">= vince l'ultima</span></div></div></div>
+
+      <div class="secsub" id="s-7-4"><span class="sn">7.4</span> Inheritance: Block vs Enforced</div>
+      <div class="rule"><div class="rn" id="r-7-4-1">7.4.1</div><div class="rt"><p><b>Block Inheritance</b> su un'OU blocca le GPO ereditate dai genitori; <b>Enforced</b> su un link forza la GPO a prevalere. <b>Enforced batte Block.</b></p></div></div>
+
+      <div class="secsub" id="s-7-5"><span class="sn">7.5</span> Filtering: Security e WMI</div>
+      <div class="rule"><div class="rn" id="r-7-5-1">7.5.1</div><div class="rt"><p><b>Security Filtering</b>: applica la GPO solo ai membri di un gruppo (permessi «Apply Group Policy» + «Read»). <b>WMI Filtering</b>: applica in base a caratteristiche del client (RAM, OS) via query WMI.</p></div></div>
+
+      <div class="secsub" id="s-7-6"><span class="sn">7.6</span> RSoP, CSE e refresh</div>
+      <div class="rule"><div class="rn" id="r-7-6-1">7.6.1</div><div class="rt"><p>Le <b>CSE</b> sul client applicano le impostazioni ricevute (modello «pull», refresh ~90–120 min; <span class="mono">gpupdate</span> forza). L'<b>RSoP</b> calcola l'effetto netto cumulativo (<span class="mono">gpresult</span>, <span class="mono">rsop.msc</span>).</p></div></div>
+      <div class="rule"><div class="rn" id="r-7-6-2">7.6.2</div><div class="rt"><p><b>Loopback Processing</b> applica all'utente le policy del computer su cui accede (Merge/Replace): tipico per kiosk e terminal server.</p></div></div>
+
+      <div class="secsub" id="s-7-7"><span class="sn">7.7</span> Policy predefinite e PSO</div>
+      <div class="rule"><div class="rn" id="r-7-7-1">7.7.1</div><div class="rt"><p><b>Default Domain Policy</b> (password, lockout, Kerberos) e <b>Default Domain Controllers Policy</b> (auditing dei DC <span class="xref">→ 13.1</span>) sono i riferimenti di base.</p></div></div>
+      <div class="rule"><div class="rn" id="r-7-7-2">7.7.2</div><div class="rt"><p>Un <b>PSO</b> definisce una policy password granulare per gruppi/utenti specifici, oltre alla Default Domain Policy.</p></div></div>
+
+      <div class="callout atk"><div class="lab">Interazione critica</div><p>Chi può <em>modificare</em> una GPO controlla tutti gli oggetti nel suo scope. Una GPO mal delegata e collegata all'OU dei DC è un percorso diretto al dominio <span class="xref">→ 12.3</span>.</p></div>
+    </div>
+  </section>
+
+  <!-- ===================== 8 ===================== -->
+  <section class="chap" id="sec-8">
+    <div class="margin">
+      <div class="margin-note">Cap. 8 · acronimi</div>
+      <div class="rec neu"><div class="ac">USN</div><div class="ex2">Update Sequence Number</div><div class="gl">Contatore per oggetto/DC che ordina e traccia le modifiche da replicare.</div></div>
+      <div class="rec neu"><div class="ac">KCC / ISTG</div><div class="ex2">Knowledge Consistency Checker / Intersite Topology Generator</div><div class="gl">Topologia di replica intra-sito / inter-sito.</div></div>
+      <div class="rec neu"><div class="ac">DFS-R / FRS</div><div class="ex2">Distributed File System Replication / File Replication Service</div><div class="gl">Replica SYSVOL moderna / legacy.</div></div>
+    </div>
+    <div class="bodycol">
+      <h2 class="ch"><span class="n">8</span> Replica e topologia</h2>
+      <p class="lede">Come le modifiche (nuovi SID, ACE, GPO) raggiungono tutti i DC — e con quale latenza.</p>
+
+      <div class="secsub" id="s-8-1"><span class="sn">8.1</span> Replica multimaster</div>
+      <div class="rule"><div class="rn" id="r-8-1-1">8.1.1</div><div class="rt"><p>AD usa replica <b>multimaster</b>: ogni DC accetta scritture, ogni modifica riceve un <b>USN</b> e un timestamp. La convergenza è garantita ma con latenza variabile.</p></div></div>
+      <div class="rule"><div class="rn" id="r-8-1-2">8.1.2</div><div class="rt"><p>La ridondanza richiede ≥2 DC per dominio: garantisce continuità di KDC, GPO, DNS e SYSVOL. Le finestre di incoerenza durante la propagazione sono reali e vanno considerate <span class="xref">→ 6.2</span>.</p></div></div>
+
+      <div class="secsub" id="s-8-2"><span class="sn">8.2</span> Intra-site e inter-site</div>
+      <div class="rule"><div class="rn" id="r-8-2-1">8.2.1</div><div class="rt"><p>Il <b>KCC</b> disegna automaticamente la topologia <b>intra-sito</b> (replica entro ~15 s dalla notifica). L'<b>ISTG</b> genera le connessioni <b>inter-sito</b> tramite Bridgehead, secondo costo/intervallo dei Site Link <span class="xref">→ 3.5</span>.</p></div></div>
+
+      <div class="secsub" id="s-8-3"><span class="sn">8.3</span> SYSVOL: DFS-R e FRS</div>
+      <div class="rule"><div class="rn" id="r-8-3-1">8.3.1</div><div class="rt"><p><b>SYSVOL</b> (script di logon, GPO) si replica con <b>DFS-R</b>, che sostituisce il legacy <b>FRS</b>; la migrazione FRS→DFS-R è irreversibile.</p></div></div>
+    </div>
+  </section>
+
+  <!-- ===================== 9 ===================== -->
+  <section class="chap" id="sec-9">
+    <div class="margin">
+      <div class="margin-note">Cap. 9 · acronimi</div>
+      <div class="rec def"><div class="ac">FSMO</div><div class="ex2">Flexible Single Master Operations</div><div class="gl">5 ruoli a master unico.</div></div>
+      <div class="rec neu"><div class="ac">RID</div><div class="ex2">Relative Identifier</div><div class="gl">Parte finale del SID, distribuita dal RID Master.</div></div>
+    </div>
+    <div class="bodycol">
+      <h2 class="ch"><span class="n">9</span> Ruoli FSMO</h2>
+      <p class="lede">Cinque operazioni che, per coerenza, non possono essere multimaster: vivono su un solo DC alla volta.</p>
+
+      <div class="secsub" id="s-9-1"><span class="sn">9.1</span> I cinque ruoli</div>
+      <div class="rule"><div class="rn" id="r-9-1-1">9.1.1</div><div class="rt"><p>Forest-wide: <b>Schema Master</b>, <b>Domain Naming Master</b>. Domain-wide: <b>RID Master</b>, <b>Infrastructure Master</b>, <b>PDC Emulator</b>.</p>
+        <table class="tbl"><tr><th>Ruolo</th><th>Ambito</th><th>Funzione</th></tr>
+        <tr><td>Schema Master</td><td>foresta</td><td>uniche modifiche allo schema</td></tr>
+        <tr><td>Domain Naming</td><td>foresta</td><td>aggiunge/rimuove domini</td></tr>
+        <tr><td>RID Master</td><td>dominio</td><td>distribuisce pool di RID <span class="xref">→ 2.4</span></td></tr>
+        <tr><td>Infrastructure</td><td>dominio</td><td>riferimenti cross-dominio dei gruppi</td></tr>
+        <tr><td>PDC Emulator</td><td>dominio</td><td>tempo, lockout, Kerberos, target GPO</td></tr></table></div></div>
+
+      <div class="secsub" id="s-9-2"><span class="sn">9.2</span> Transfer e Seize</div>
+      <div class="rule"><div class="rn" id="r-9-2-1">9.2.1</div><div class="rt"><p><b>Transfer</b> (DC online) per manutenzione/bilanciamento; <b>Seize</b> (DC irraggiungibile) come emergenza.</p>
+        <ol class="sub"><li>Dopo un seize di <b>Schema / Domain Naming / RID</b> il vecchio DC non deve tornare online (rischio di SID/oggetti duplicati).</li><li><b>PDC Emulator</b> e <b>Infrastructure</b> possono rientrare senza rischi.</li></ol></div></div>
+    </div>
+  </section>
+
+  <!-- ===================== 10 ===================== -->
+  <section class="chap" id="sec-10">
+    <div class="margin">
+      <div class="margin-note">Cap. 10 · acronimi</div>
+      <div class="rec def"><div class="ac">DR</div><div class="ex2">Disaster Recovery</div><div class="gl">Backup, restore, ripristino oggetti e continuità del servizio.</div></div>
+    </div>
+    <div class="bodycol">
+      <h2 class="ch"><span class="n">10</span> Operazioni e disaster recovery</h2>
+      <p class="lede">Mantenere e ripristinare la directory: l'ordine corretto delle operazioni evita perdite e incoerenze.</p>
+
+      <div class="secsub" id="s-10-1"><span class="sn">10.1</span> Backup</div>
+      <div class="rule"><div class="rn" id="r-10-1-1">10.1.1</div><div class="rt"><p>Il backup dello <b>System State</b> (es. <span class="mono">wbadmin</span>) salva il database AD e abilita ogni ripristino <span class="xref">→ 10.2</span>.</p></div></div>
+
+      <div class="secsub" id="s-10-2"><span class="sn">10.2</span> Restore: non-authoritative e authoritative</div>
+      <div class="rule"><div class="rn" id="r-10-2-1">10.2.1</div><div class="rt"><p><b>Non-authoritative</b>: il DC si ripristina da backup e poi riceve via replica le modifiche più recenti — il ripristino «normale» di un DC.</p></div></div>
+      <div class="rule"><div class="rn" id="r-10-2-2">10.2.2</div><div class="rt"><p><b>Authoritative</b> (<span class="mono">ntdsutil</span>): marca gli oggetti ripristinati con version number elevato così che <b>vincano</b> sulla replica e si propaghino agli altri DC — per recuperare oggetti cancellati prima del Recycle Bin.</p></div></div>
+
+      <div class="secsub" id="s-10-3"><span class="sn">10.3</span> Recycle Bin</div>
+      <div class="rule"><div class="rn" id="r-10-3-1">10.3.1</div><div class="rt"><p>L'<b>AD Recycle Bin</b>, una volta abilitato, ripristina oggetti eliminati con tutti gli attributi, senza downtime (Deleted Objects).</p></div></div>
+
+      <div class="secsub" id="s-10-4"><span class="sn">10.4</span> Functional Level</div>
+      <div class="rule"><div class="rn" id="r-10-4-1">10.4.1</div><div class="rt"><p>Il <b>Functional Level</b> abilita funzionalità e vincola la versione minima dei DC. Il livello di dominio può essere ≥ del livello di foresta, mai inferiore; l'innalzamento è <b>irreversibile</b>.</p></div></div>
+    </div>
+  </section>
+
+  <!-- ===================== 11 ===================== -->
+  <section class="chap" id="sec-11">
+    <div class="margin">
+      <div class="margin-note">Cap. 11 · acronimi</div>
+      <div class="rec neu"><div class="ac">Trust</div><div class="gl">Relazione di fiducia che estende autenticazione/autorizzazione oltre il confine del dominio.</div></div>
+    </div>
+    <div class="bodycol">
+      <h2 class="ch"><span class="n">11</span> Trust e relazioni multi-dominio</h2>
+      <p class="lede">Come l'autenticazione attraversa i confini di dominio e di foresta.</p>
+
+      <div class="secsub" id="s-11-1"><span class="sn">11.1</span> Trust intra-forest</div>
+      <div class="rule"><div class="rn" id="r-11-1-1">11.1.1</div><div class="rt"><p>Dentro una foresta le trust sono <b>automatiche, transitive e bidirezionali</b>: tutti i domini si fidano reciprocamente.</p></div></div>
+
+      <div class="secsub" id="s-11-2"><span class="sn">11.2</span> Trust inter-forest</div>
+      <div class="rule"><div class="rn" id="r-11-2-1">11.2.1</div><div class="rt"><p>Tra foreste le trust sono <b>manuali</b>, per default non transitive, e richiedono risoluzione DNS reciproca. Possono essere one-way o two-way.</p></div></div>
+
+      <div class="secsub" id="s-11-3"><span class="sn">11.3</span> SID filtering</div>
+      <div class="rule"><div class="rn" id="r-11-3-1">11.3.1</div><div class="rt"><p>Il <b>SID filtering</b> sulle trust inter-forest scarta i SID non appartenenti al dominio d'origine, proteggendo da SID History injection cross-forest <span class="xref">→ 12.5</span>.</p></div></div>
+    </div>
+  </section>
+
+  <!-- ===================== 12 ===================== -->
+  <section class="chap" id="sec-12">
+    <div class="margin">
+      <div class="margin-note">Cap. 12 · acronimi</div>
+      <div class="rec atk"><div class="ac">DCSync</div><div class="gl">Abuso del diritto di replica per estrarre i segreti (incl. hash krbtgt). <b>Difesa:</b> restringere «Replicating Directory Changes».</div></div>
+      <div class="rec atk"><div class="ac">PtH / PtT</div><div class="ex2">Pass-the-Hash / Pass-the-Ticket</div><div class="gl">Riuso di hash/ticket rubati. <b>Difesa:</b> tiering, LAPS, Credential Guard.</div></div>
+    </div>
+    <div class="bodycol">
+      <h2 class="ch"><span class="n">12</span> Modello delle minacce</h2>
+      <p class="lede">Le tecniche reali che sfruttano i processi precedenti. Ogni voce indica la difesa. Materia esterna al modulo d'esame: contraltare offensivo.</p>
+
+      <div class="secsub" id="s-12-1"><span class="sn">12.1</span> Recon</div>
+      <div class="rule atk"><div class="rn" id="r-12-1-1">12.1.1</div><div class="rt"><p>Enumerazione via <b>LDAP</b> (BloodHound, PowerView): per default ogni utente può leggere utenti, gruppi, SPN. Calcola i percorsi verso Domain Admin nel grafo <span class="xref">→ 1.2</span>. <b>Difesa:</b> monitorare query LDAP anomale.</p></div></div>
+
+      <div class="secsub" id="s-12-2"><span class="sn">12.2</span> Credential access</div>
+      <div class="rule atk"><div class="rn" id="r-12-2-1">12.2.1</div><div class="rt"><p><b>Kerberoasting</b> (TGS di service account craccato offline), <b>AS-REP Roast</b> (account senza pre-auth), <b>NTLM Relay</b>, dump <b>LSASS</b>. <b>Difesa:</b> gMSA, pre-auth, SMB signing, Credential Guard.</p></div></div>
+
+      <div class="secsub" id="s-12-3"><span class="sn">12.3</span> Privilege escalation</div>
+      <div class="rule atk"><div class="rn" id="r-12-3-1">12.3.1</div><div class="rt"><p>Abuso di ACL deboli (<span class="mono">GenericAll/WriteDACL</span>), aggiunta a un gruppo privilegiato (poi nuovo logon <span class="xref">→ 6.2</span>), GPO malevola. <b>Difesa:</b> revisione ACL, least privilege, delega rigorosa.</p></div></div>
+
+      <div class="secsub" id="s-12-4"><span class="sn">12.4</span> Lateral movement</div>
+      <div class="rule atk"><div class="rn" id="r-12-4-1">12.4.1</div><div class="rt"><p>Spostarsi con credenziali/token già acquisiti: <b>Pass-the-Hash</b>, <b>Pass-the-Ticket</b>, <b>Token Theft</b> da una sessione attiva. <b>Difesa:</b> tiering amministrativo, niente Domain Admin sulle workstation.</p></div></div>
+
+      <div class="secsub" id="s-12-5"><span class="sn">12.5</span> Domain dominance e persistenza</div>
+      <div class="rule atk"><div class="rn" id="r-12-5-1">12.5.1</div><div class="rt"><p><b>DCSync</b> estrae l'hash <span class="mono">krbtgt</span>; con esso il <b>Golden Ticket</b> forgia un TGT arbitrario (il <b>Silver Ticket</b> forgia un TGS). <b>SID History</b> e <b>AdminSDHolder</b> assicurano persistenza. <b>Difesa:</b> restringere la replica, reset krbtgt ×2 <span class="xref">→ 13.4</span>, SID filtering <span class="xref">→ 11.3</span>.</p></div></div>
+    </div>
+  </section>
+
+  <!-- ===================== 13 ===================== -->
+  <section class="chap" id="sec-13">
+    <div class="margin">
+      <div class="margin-note">Cap. 13 · acronimi</div>
+      <div class="rec def"><div class="ac">IR</div><div class="ex2">Incident Response</div><div class="gl">Rilevare → contenere → eradicare → recuperare.</div></div>
+      <div class="rec def"><div class="ac">SIEM</div><div class="ex2">Security Information &amp; Event Management</div><div class="gl">Correla gli eventi del Security Log per rilevare anomalie.</div></div>
+    </div>
+    <div class="bodycol">
+      <h2 class="ch"><span class="n">13</span> Rilevamento e Incident Response</h2>
+      <p class="lede">Vedere ciò che accade e reagire in ordine: il lato difensivo dei processi precedenti.</p>
+
+      <div class="secsub" id="s-13-1"><span class="sn">13.1</span> Auditing ed Event ID</div>
+      <div class="rule"><div class="rn" id="r-13-1-1">13.1.1</div><div class="rt"><p>L'auditing si configura via GPO (Advanced Audit Policy) + <b>SACL</b> sugli oggetti <span class="xref">→ 6.5</span>. Ogni accesso rilevante genera un evento nel Security Log.</p>
+        <div class="ex mono"><span class="exl" style="font-family:var(--display)">Event ID chiave</span> 4624/4625 logon · 4768/4769 TGT/TGS · 4776 NTLM · 4662 accesso a oggetto AD · 4728/4732 add a gruppo · 4672 privilegi speciali · 4765 SID History.</div></div></div>
+
+      <div class="secsub" id="s-13-2"><span class="sn">13.2</span> SIEM e detection</div>
+      <div class="rule"><div class="rn" id="r-13-2-1">13.2.1</div><div class="rt"><p>Un <b>SIEM</b> (Sentinel, Splunk, QRadar) raccoglie e correla gli eventi per rilevare anomalie. Le tecniche d'attacco lasciano artefatti (volumi LDAP, TGS anomali, accessi a LSASS): più sono rumorose, prima si rilevano.</p></div></div>
+
+      <div class="secsub" id="s-13-3"><span class="sn">13.3</span> Ciclo di Incident Response</div>
+      <div class="rule"><div class="rn" id="r-13-3-1">13.3.1</div><div class="rt"><p>Il ciclo è <b>rilevare → contenere → eradicare → recuperare</b>. Il recupero usa restore/Recycle Bin <span class="xref">→ 10.2</span>.</p></div></div>
+
+      <div class="secsub" id="s-13-4"><span class="sn">13.4</span> Reset krbtgt ×2</div>
+      <div class="rule"><div class="rn" id="r-13-4-1">13.4.1</div><div class="rt"><p>Per invalidare i Golden Ticket si resetta la password di <span class="mono">krbtgt</span> <b>due volte</b>, con intervallo ≥ il massimo ticket lifetime: la prima rotazione aggiorna la chiave corrente, la seconda elimina quella precedente ancora accettata <span class="xref">→ 12.5</span>.</p></div></div>
+    </div>
+  </section>
+
+  <!-- ===================== 14 GLOSSARIO ===================== -->
+  <section class="chap" id="sec-14">
+    <div class="margin"><div class="margin-note">Richiamo rapido<br>tutti gli acronimi</div></div>
+    <div class="bodycol">
+      <h2 class="ch"><span class="n">14</span> Glossario-acronimi</h2>
+      <table class="tbl">
+        <tr><th>Sigla</th><th>Forma estesa</th><th>In una riga</th></tr>
+        <tr><td class="mono">AD DS</td><td>Active Directory Domain Services</td><td>Database + servizi d'identità.</td></tr>
+        <tr><td class="mono">DC / RODC</td><td>Domain Controller / Read-Only DC</td><td>Server AD DS; RODC = sola lettura.</td></tr>
+        <tr><td class="mono">OU</td><td>Organizational Unit</td><td>Contenitore con GPO e delega.</td></tr>
+        <tr><td class="mono">SID / RID / GUID</td><td>Security / Relative Identifier / Globally Unique ID</td><td>ID di sicurezza / sua parte finale / ID immutabile.</td></tr>
+        <tr><td class="mono">DN / RDN / UPN / SAM</td><td>Distinguished/Relative Name · User Principal Name · SAMAccountName</td><td>Nomi e forme di logon.</td></tr>
+        <tr><td class="mono">ACL / DACL / SACL / ACE</td><td>Access Control List (Discretionary/System) / Entry</td><td>Permessi (Deny vince) / audit / regola.</td></tr>
+        <tr><td class="mono">KDC / TGT / TGS / SPN</td><td>Key Distribution Center · Ticket Granting Ticket/Service · Service Principal Name</td><td>Catena Kerberos.</td></tr>
+        <tr><td class="mono">NTLM</td><td>NT LAN Manager</td><td>Auth challenge-response legacy.</td></tr>
+        <tr><td class="mono">LDAP / SRV</td><td>Lightweight Directory Access Protocol / Service record</td><td>Query directory / individuazione DC.</td></tr>
+        <tr><td class="mono">GC (PAS)</td><td>Global Catalog (Partial Attribute Set)</td><td>Replica parziale di foresta.</td></tr>
+        <tr><td class="mono">IGDLA</td><td>Identity · Global · Domain Local · Access</td><td>Catena di annidamento permessi.</td></tr>
+        <tr><td class="mono">GPO / SDOU / LSDOU</td><td>Group Policy Object · Site·Domain·OU · Local·Site·Domain·OU</td><td>Policy / target del link / ordine.</td></tr>
+        <tr><td class="mono">RSoP / CSE / PSO</td><td>Resultant Set of Policy / Client-Side Extensions / Password Settings Object</td><td>Effetto netto / applicazione / pw granulare.</td></tr>
+        <tr><td class="mono">USN / KCC / ISTG</td><td>Update Sequence Number · Knowledge Consistency Checker · Intersite Topology Generator</td><td>Replica e topologia.</td></tr>
+        <tr><td class="mono">DFS-R / FRS</td><td>Distributed File System Replication / File Replication Service</td><td>Replica SYSVOL nuova/vecchia.</td></tr>
+        <tr><td class="mono">FSMO</td><td>Flexible Single Master Operations</td><td>5 ruoli a master unico.</td></tr>
+        <tr><td class="mono">IR / SIEM</td><td>Incident Response / Security Information &amp; Event Management</td><td>Risposta / correlazione eventi.</td></tr>
+        <tr><td class="mono">gMSA / LAPS</td><td>Group Managed Service Account / Local Admin Password Solution</td><td>Difese su credenziali di servizio/locali.</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================== 15 APPENDICE ===================== -->
+  <section class="chap" id="sec-15">
+    <div class="margin"><div class="margin-note">Appendice<br>i processi in sequenza</div></div>
+    <div class="bodycol">
+      <h2 class="ch"><span class="n">15</span> Appendice: flussi end-to-end</h2>
+      <p class="lede">Gli stessi elementi visti finora, ma in <b>sequenza</b>: l'ordine reale in cui i processi si attivano e si passano il testimone.</p>
+
+      <div class="secsub" id="s-15-1"><span class="sn">15.1</span> Dal logon all'accesso a una risorsa</div>
+      <div class="rule"><div class="rn" id="r-15-1-1">15.1.1</div><div class="rt">
+        <div class="seq">
+        <span class="st">1</span>DNS/SRV: trova il DC <span class="arr">▶ 5.1</span><br>
+        <span class="st">2</span>AS-REQ → <b>TGT</b> dal KDC <span class="arr">▶ 5.3</span><br>
+        <span class="st">3</span>costruzione <b>Access Token</b> (SID utente + gruppi) <span class="arr">▶ 6.1</span><br>
+        <span class="st">4</span>TGS-REQ → <b>TGS</b> per lo SPN <span class="arr">▶ 5.4</span><br>
+        <span class="st">5</span>AP-REQ al servizio <span class="arr">▶ 5.5</span><br>
+        <span class="st">6</span><b>Access Check</b>: token vs DACL (Deny→Allow) <span class="arr">▶ 6.4</span><br>
+        <span class="st">7</span>SACL: evento di audit <span class="arr">▶ 6.5</span>
+        </div></div></div>
+
+      <div class="secsub" id="s-15-2"><span class="sn">15.2</span> Applicazione delle Group Policy</div>
+      <div class="rule"><div class="rn" id="r-15-2-1">15.2.1</div><div class="rt">
+        <div class="seq">
+        <span class="st">1</span>link a S/D/OU <span class="arr">▶ 7.2</span> <span class="arr">→</span> <span class="st">2</span>ordine <b>LSDOU</b> <span class="arr">▶ 7.3</span> <span class="arr">→</span> <span class="st">3</span>Block/Enforced <span class="arr">▶ 7.4</span><br>
+        <span class="st">4</span>filtering Security/WMI <span class="arr">▶ 7.5</span> <span class="arr">→</span> <span class="st">5</span>CSE applica sul client <span class="arr">▶ 7.6</span> <span class="arr">→</span> <span class="st">6</span>RSoP = effetto netto
+        </div></div></div>
+
+      <div class="secsub" id="s-15-3"><span class="sn">15.3</span> Propagazione della replica</div>
+      <div class="rule"><div class="rn" id="r-15-3-1">15.3.1</div><div class="rt">
+        <div class="seq">
+        scrittura su un DC <span class="arr">→</span> USN++ <span class="arr">▶ 8.1</span> <span class="arr">→</span> KCC intra-sito (~15s) <span class="arr">▶ 8.2</span> <span class="arr">→</span> ISTG inter-sito (Site Link) <span class="arr">→</span> convergenza su tutti i DC
+        </div>
+        <p>Finché la replica non converge esistono <b>finestre di incoerenza</b>: lo stesso token può valere diversamente su DC diversi <span class="xref">→ 6.2</span>.</p></div></div>
+
+      <div class="secsub" id="s-15-4"><span class="sn">15.4</span> Catena d'attacco e difese</div>
+      <div class="rule atk"><div class="rn" id="r-15-4-1">15.4.1</div><div class="rt">
+        <div class="seq">
+        Recon <span class="arr">▶ 12.1</span> <span class="arr">→</span> Cred access <span class="arr">▶ 12.2</span> <span class="arr">→</span> Esc <span class="arr">▶ 12.3</span> <span class="arr">→</span> Lateral <span class="arr">▶ 12.4</span> <span class="arr">→</span> Dominance <span class="arr">▶ 12.5</span>
+        </div>
+        <p>Ogni passo è un arco che la configurazione corretta dei capitoli 4–11 poteva chiudere. La difesa finale è rilevamento + IR + reset krbtgt ×2 <span class="xref">→ 13</span>.</p></div></div>
+
+      <div class="callout"><div class="lab">Dalla teoria alla galleria</div><p>Ogni voce di legenda nella galleria <a class="xref" href="#top">▣ Carte &amp; Legenda</a> rimanda al passaggio di questo compendio in cui quel processo è funzionale. Usa i due documenti in parallelo: la carta dice <em>cosa fa</em>, il compendio dice <em>dove</em> e <em>in che ordine</em>.</p></div>
+    </div>
+  </section>
+
+  <hr class="heavy">
+
+</div>
+
+
+<script>
+// ROOT OF TRUST — dati di gioco (single source of truth).
+// Modifica QUI per aggiungere/ritoccare carte, keyword e voci di legenda.
+// Caricato da index.html via <script src="data.js"> (niente fetch: si apre offline).
+
+const A=' <span class="ar">→</span> ';
+
+const KW=[
+["LOGON","n","(Ri)costruisce il Token del possessore. Trigger."],
+["TOKEN","n","Insieme di SID = proprietario + ogni MemberOf, fissato al Logon."],
+["MEMBEROF","n","Il SID dell'elemento entra nel Token del possessore."],
+["NEST","n","Un gruppo entra in un altro gruppo. Catena IGDLA."],
+["ACCESSCHECK","n","Confronta i SID del Token con la DACL. Deny precede Allow."],
+["ALLOW / DENY","n","Polarità di una ACE. Deny risolve per primo."],
+["LINK","d","Aggancia una GPO a Site / Domain / OU."],
+["INHERIT","d","L'effetto scende l'albero OU (LSDOU). Enforced batte Block."],
+["FILTER","d","Restringe il bersaglio di una GPO (gruppo o attributo PC)."],
+["DELEGATE","d","Concede diritti su una OU a un'identità."],
+["REPLICATE","n","Copia l'elemento sui DC (di dominio o di foresta). Ha latenza."],
+["AUDIT","d","Quando l'elemento è toccato, aggiunge un segnalino Trace."],
+["TRACE","d","Contatore di rilevamento. A soglia → IR."],
+["NOISE","a","La Tecnica aggiunge Trace (basso / medio / alto)."],
+["RECON","a","Rivela archi coperti adiacenti. Abilita altre Tecniche."],
+["TRAVERSE","a","Sposta il marker TA su un arco se il requisito è soddisfatto."],
+["COMPROMISE","a","Pone controllo TA su un nodo."],
+["ESCALATE","a","Sostituisce il Token con uno a privilegio superiore."],
+["CRACK","a","Converte un TGS / hash catturato in Token."],
+["STEAL","a","Prende il Token / hash da un nodo con Session."],
+["SESSION","a","Un Token attivo risiede sul nodo: è rubabile."],
+["FORGE","a","Crea un ticket / Token senza Logon. Richiede chiave krbtgt o di servizio."],
+["SYNC","a","Estrae i segreti dal DC, inclusa la chiave krbtgt."],
+["PERSIST","a","Sopravvive a Reset / IR."],
+["RESET","d","Invalida Forge e credenziali. La chiave krbtgt richiede ×2."],
+["HARDEN","d","Chiude un arco esistente."],
+["TRANSFER / SEIZE","d","Sposta un ruolo FSMO su un altro DC."],
+["RESTORE / RECYCLE","d","Recupera un Object eliminato; propaga via Replicate."],
+["REDUNDANCY","d","≥2 DC: failover, nessun single point."],
+["TRUST","n","Apre un arco cross-Domain (one-way / two-way, transitive)."]
+];
+
+const CARDS=[
+{n:"KDC",fac:"neu",cost:"S",ty:"Protocollo",cls:"PROTOCOL",rel:"[User]+credenziale"+A+"[TGT]; [TGT]"+A+"[TGS]. Vive su [DC].",kw:["LOGON","TOKEN","FORGE"]},
+{n:"Kerberos Logon",fac:"neu",cost:"S",ty:"Protocollo",cls:"PROTOCOL",rel:"[User]"+A+"[KDC]"+A+"[Access Token].",kw:["LOGON","TOKEN"]},
+{n:"TGT",fac:"neu",cost:"S",ty:"Ticket",cls:"PROTOCOL",rel:"emesso da [KDC]; presentato"+A+"[TGS].",kw:["TOKEN","FORGE"]},
+{n:"TGS",fac:"neu",cost:"S",ty:"Ticket",cls:"PROTOCOL",rel:"per una [Resource]; presentato"+A+"AccessCheck.",kw:["ACCESSCHECK","CRACK"]},
+{n:"NTLM",fac:"neu",cost:"S",ty:"Protocollo (legacy)",cls:"PROTOCOL",rel:"hash"+A+"auth senza [KDC].",kw:["STEAL","CRACK"]},
+{n:"LDAP",fac:"neu",cost:"S",ty:"Protocollo",cls:"PROTOCOL",rel:"interroga la [Directory].",kw:["RECON"]},
+{n:"DNS / SRV",fac:"neu",cost:"S",ty:"Protocollo",cls:"PROTOCOL",rel:"client"+A+"[DC]. Prerequisito del Logon.",kw:["LOGON"]},
+
+{n:"Forest",fac:"def",cost:"2",ty:"Oggetto",cls:"DIRECTORY",rel:"contiene [Tree]/[Domain]; [Schema]+[Configuration] Replicate forest.",kw:["REPLICATE","TRUST"]},
+{n:"Tree",fac:"def",cost:"1",ty:"Oggetto",cls:"DIRECTORY",rel:"[Domain] con DNS contiguo.",kw:["TRUST"]},
+{n:"Domain",fac:"def",cost:"1",ty:"Oggetto",cls:"DIRECTORY",rel:"confine di [Domain NC]; Replicate domain.",kw:["REPLICATE","TRUST"]},
+{n:"Domain Controller",fac:"def",cost:"2",ty:"Oggetto",cls:"DIRECTORY",rel:"detiene [NTDS.DIT]+[SYSVOL]; ospita [KDC].",kw:["REPLICATE","REDUNDANCY","SYNC"]},
+{n:"RODC",fac:"def",cost:"1",ty:"Oggetto",cls:"DIRECTORY",rel:"copia read-only di [DC]; Replicate parziale (PRP).",kw:["REPLICATE"]},
+{n:"NTDS.DIT",fac:"def",cost:"S",ty:"Oggetto",cls:"DIRECTORY",rel:"dentro [DC]; bersaglio di Sync.",kw:["SYNC","RESTORE / RECYCLE"]},
+{n:"SYSVOL",fac:"def",cost:"S",ty:"Oggetto",cls:"DIRECTORY",rel:"dentro [DC]; ospita [GPO]/script; Replicate (DFS-R).",kw:["REPLICATE"]},
+{n:"Schema",fac:"def",cost:"S",ty:"Partizione",cls:"DIRECTORY",rel:"definisce Object/attributi; Replicate forest.",kw:["REPLICATE"]},
+{n:"Configuration",fac:"def",cost:"S",ty:"Partizione",cls:"DIRECTORY",rel:"[Site]/[Site Link]/replica; Replicate forest.",kw:["REPLICATE"]},
+{n:"Domain NC",fac:"def",cost:"S",ty:"Partizione",cls:"DIRECTORY",rel:"[User]/[Group]/[OU]; Replicate domain.",kw:["REPLICATE"]},
+{n:"Global Catalog",fac:"def",cost:"1",ty:"Oggetto",cls:"DIRECTORY",rel:"replica parziale (PAS); ospita [Group · Universal].",kw:["REPLICATE"]},
+{n:"Organizational Unit",fac:"def",cost:"1",ty:"Oggetto",cls:"DIRECTORY",rel:"contiene Identity; accetta Link e Delegate; propaga Inherit.",kw:["LINK","INHERIT","DELEGATE"]},
+{n:"Container",fac:"def",cost:"S",ty:"Oggetto",cls:"DIRECTORY",rel:"contiene Identity; NON accetta Link né Delegate.",kw:["INHERIT"]},
+{n:"Site",fac:"def",cost:"1",ty:"Oggetto",cls:"DIRECTORY",rel:"raggruppa [Subnet]; governa Replicate inter-sito.",kw:["REPLICATE"]},
+{n:"Subnet",fac:"def",cost:"1",ty:"Oggetto",cls:"DIRECTORY",rel:"associa client"+A+"[DC] via [DNS / SRV].",kw:["REPLICATE"]},
+{n:"Site Link",fac:"def",cost:"1",ty:"Oggetto",cls:"DIRECTORY",rel:"connette [Site] con costo/intervallo.",kw:["REPLICATE"]},
+{n:"Trust",fac:"neu",cost:"2",ty:"Power",cls:"DIRECTORY",rel:"arco tra [Domain]/[Forest]; one-way/two-way, transitive.",kw:["TRUST","TRAVERSE"]},
+
+{n:"User",fac:"def",cost:"1",ty:"Oggetto",cls:"IDENTITY",rel:"ha [SID]; MemberOf [Group]; al Logon genera [Access Token].",kw:["MEMBEROF","TOKEN","LOGON"]},
+{n:"Computer",fac:"def",cost:"1",ty:"Oggetto",cls:"IDENTITY",rel:"ha [SID]; join [Domain] (Trust); può avere Session.",kw:["SESSION","MEMBEROF"]},
+{n:"SID",fac:"neu",cost:"S",ty:"Stato",cls:"IDENTITY",rel:"identifica Identity; entra nel Token; matcha [ACE].",kw:["TOKEN","ACCESSCHECK"]},
+{n:"Access Token",fac:"neu",cost:"S",ty:"Stato",cls:"IDENTITY",rel:"= [SID] + ogni MemberOf; confrontato con [DACL].",kw:["TOKEN","LOGON","ACCESSCHECK","STEAL"]},
+{n:"Group · Global",fac:"def",cost:"1",ty:"Oggetto",cls:"IDENTITY",rel:"raccoglie [User] (role); Nest"+A+"[Group · Domain Local].",kw:["MEMBEROF","NEST"]},
+{n:"Group · Domain Local",fac:"def",cost:"1",ty:"Oggetto",cls:"IDENTITY",rel:"riceve [ACE] (rule); accetta Nest.",kw:["NEST","ACCESSCHECK"]},
+{n:"Group · Universal",fac:"def",cost:"1",ty:"Oggetto",cls:"IDENTITY",rel:"multi-dominio; ospitato nel [Global Catalog].",kw:["MEMBEROF","REPLICATE"]},
+{n:"Distribution Group",fac:"def",cost:"S",ty:"Oggetto",cls:"IDENTITY",rel:"solo lista email; senza [SID].",kw:[]},
+{n:"Privileged Group",fac:"def",cost:"S",ty:"Oggetto",cls:"IDENTITY",rel:"MemberOf"+A+"Token alto; bersaglio di Escalate.",kw:["MEMBEROF","ESCALATE"]},
+{n:"Special Identity",fac:"neu",cost:"S",ty:"Stato",cls:"IDENTITY",rel:"[SID] di sistema in ogni Token.",kw:["TOKEN","ACCESSCHECK"]},
+
+{n:"Security Descriptor",fac:"def",cost:"S",ty:"Oggetto",cls:"ACCESS",rel:"avvolge [Resource]; contiene [DACL]+[SACL].",kw:["ACCESSCHECK","AUDIT"]},
+{n:"ACL",fac:"def",cost:"S",ty:"Oggetto",cls:"ACCESS",rel:"lista ordinata di [ACE].",kw:["ACCESSCHECK"]},
+{n:"DACL",fac:"def",cost:"1",ty:"Oggetto",cls:"ACCESS",rel:"[ACE] Allow/Deny; input dell'AccessCheck.",kw:["ACCESSCHECK","ALLOW / DENY"]},
+{n:"SACL",fac:"def",cost:"1",ty:"Oggetto",cls:"ACCESS",rel:"alla risorsa toccata genera Audit"+A+"Trace.",kw:["AUDIT","TRACE"]},
+{n:"ACE · Allow",fac:"def",cost:"S",ty:"Stato",cls:"ACCESS",rel:"[SID]+diritto; concede in AccessCheck.",kw:["ALLOW / DENY","ACCESSCHECK"]},
+{n:"ACE · Deny",fac:"def",cost:"S",ty:"Stato",cls:"ACCESS",rel:"[SID]+diritto; risolve prima di Allow.",kw:["ALLOW / DENY","ACCESSCHECK"]},
+{n:"Resource / Share",fac:"def",cost:"1",ty:"Oggetto",cls:"ACCESS",rel:"protetta da [Security Descriptor]; bersaglio di AccessCheck.",kw:["ACCESSCHECK"]},
+
+{n:"GPO",fac:"def",cost:"1",ty:"Power",cls:"POLICY",rel:"Link a SDOU; propaga Inherit; accetta Filter.",kw:["LINK","INHERIT","FILTER","HARDEN"]},
+{n:"GPO Link",fac:"def",cost:"1",ty:"Operazione",cls:"POLICY",rel:"aggancia [GPO]"+A+"[Site]/[Domain]/[OU].",kw:["LINK","INHERIT"]},
+{n:"Inheritance",fac:"def",cost:"S",ty:"Stato",cls:"POLICY",rel:"altera Inherit; Enforced batte Block.",kw:["INHERIT"]},
+{n:"Security Filtering",fac:"def",cost:"1",ty:"Operazione",cls:"POLICY",rel:"limita [GPO] a un [Group · Global].",kw:["FILTER"]},
+{n:"WMI Filtering",fac:"def",cost:"1",ty:"Operazione",cls:"POLICY",rel:"limita [GPO] per attributo del [Computer].",kw:["FILTER"]},
+{n:"Loopback Processing",fac:"def",cost:"S",ty:"Stato",cls:"POLICY",rel:"applica user-policy del [Computer] (Merge/Replace).",kw:["INHERIT"]},
+{n:"PSO",fac:"def",cost:"1",ty:"Power",cls:"POLICY",rel:"password granulare"+A+"[Group]/[User].",kw:["FILTER","HARDEN"]},
+{n:"RSoP",fac:"def",cost:"1",ty:"Operazione",cls:"POLICY",rel:"calcola l'effetto netto delle [GPO] (gpresult).",kw:["INHERIT"]},
+{n:"Default Domain Policy",fac:"def",cost:"S",ty:"Power",cls:"POLICY",rel:"password/lockout/Kerberos"+A+"[Domain].",kw:["INHERIT","HARDEN"]},
+{n:"Default DC Policy",fac:"def",cost:"S",ty:"Power",cls:"POLICY",rel:"Audit"+A+"[Domain Controller].",kw:["AUDIT"]},
+{n:"GPSI",fac:"def",cost:"1",ty:"Operazione",cls:"POLICY",rel:"distribuisce .msi via [GPO].",kw:["LINK"]},
+{n:"CSE",fac:"def",cost:"S",ty:"Stato",cls:"POLICY",rel:"applica [GPO] lato [Computer] (pull).",kw:["INHERIT"]},
+
+{n:"FSMO · Schema Master",fac:"def",cost:"S",ty:"Ruolo",cls:"TOPOLOGY",rel:"single-master di [Forest]; Transfer/Seize.",kw:["TRANSFER / SEIZE","REPLICATE"]},
+{n:"FSMO · Domain Naming",fac:"def",cost:"S",ty:"Ruolo",cls:"TOPOLOGY",rel:"single-master di [Forest]; Transfer/Seize.",kw:["TRANSFER / SEIZE"]},
+{n:"FSMO · RID Master",fac:"def",cost:"S",ty:"Ruolo",cls:"TOPOLOGY",rel:"distribuisce RID"+A+"[SID]; Transfer/Seize.",kw:["TRANSFER / SEIZE"]},
+{n:"FSMO · Infrastructure",fac:"def",cost:"S",ty:"Ruolo",cls:"TOPOLOGY",rel:"single-master di [Domain]; Transfer/Seize.",kw:["TRANSFER / SEIZE"]},
+{n:"FSMO · PDC Emulator",fac:"def",cost:"S",ty:"Ruolo",cls:"TOPOLOGY",rel:"tempo/lockout/Kerberos; nodo critico; Transfer/Seize.",kw:["TRANSFER / SEIZE","REDUNDANCY"]},
+{n:"KCC",fac:"def",cost:"S",ty:"Operazione",cls:"TOPOLOGY",rel:"disegna Replicate intra-sito.",kw:["REPLICATE"]},
+{n:"ISTG / Bridgehead",fac:"def",cost:"S",ty:"Operazione",cls:"TOPOLOGY",rel:"governa Replicate inter-[Site].",kw:["REPLICATE"]},
+{n:"Replication (DFS-R)",fac:"def",cost:"1",ty:"Operazione",cls:"TOPOLOGY",rel:"propaga [SYSVOL]/NC tra [DC].",kw:["REPLICATE"]},
+{n:"FRS (legacy)",fac:"def",cost:"S",ty:"Stato",cls:"TOPOLOGY",rel:"Replicate vecchio; migrazione irreversibile"+A+"DFS-R.",kw:["REPLICATE"]},
+{n:"Functional Level",fac:"def",cost:"1",ty:"Stato",cls:"TOPOLOGY",rel:"abilita funzioni; irreversibile; vincola OS dei [DC].",kw:[]},
+{n:"Backup (wbadmin)",fac:"def",cost:"1",ty:"Operazione",cls:"TOPOLOGY",rel:"salva lo stato della [Directory]; abilita Restore.",kw:["RESTORE / RECYCLE"]},
+{n:"Authoritative Restore",fac:"def",cost:"2",ty:"Operazione",cls:"TOPOLOGY",rel:"ripristina e impone via Replicate.",kw:["RESTORE / RECYCLE","REPLICATE"]},
+{n:"Non-auth Restore",fac:"def",cost:"1",ty:"Operazione",cls:"TOPOLOGY",rel:"ripristina e riceve Replicate.",kw:["RESTORE / RECYCLE","REPLICATE"]},
+{n:"Recycle Bin",fac:"def",cost:"1",ty:"Operazione",cls:"TOPOLOGY",rel:"recupera un Object eliminato.",kw:["RESTORE / RECYCLE"]},
+{n:"Transfer / Seize FSMO",fac:"def",cost:"1",ty:"Operazione",cls:"TOPOLOGY",rel:"sposta un [Ruolo FSMO] su altro [DC].",kw:["TRANSFER / SEIZE"]},
+{n:"Reset krbtgt ×2",fac:"def",cost:"2",ty:"Operazione",cls:"TOPOLOGY",rel:"invalida ogni Forge (Golden Ticket).",kw:["RESET","HARDEN"]},
+{n:"Incident Response",fac:"def",cost:"1",ty:"Operazione",cls:"TOPOLOGY",rel:"Trace a soglia"+A+"contieni/eradica; abilita Harden e Reset.",kw:["TRACE","HARDEN","RESET"]},
+
+{n:"BloodHound",fac:"atk",cost:"1",ty:"Tecnica · Recon",cls:"THREAT",rel:"rivela archi MemberOf/AdminTo/GenericAll dal foothold.",kw:["RECON","NOISE"]},
+{n:"LDAP Enum",fac:"atk",cost:"1",ty:"Tecnica · Recon",cls:"THREAT",rel:"rivela la [Directory] via [LDAP].",kw:["RECON","NOISE"]},
+{n:"Kerberoasting",fac:"atk",cost:"2",ty:"Tecnica · Cred",cls:"THREAT",rel:"[TGS] di service account"+A+"Crack"+A+"[Access Token].",kw:["CRACK","NOISE"]},
+{n:"AS-REP Roast",fac:"atk",cost:"2",ty:"Tecnica · Cred",cls:"THREAT",rel:"account senza preauth"+A+"Crack.",kw:["CRACK","NOISE"]},
+{n:"NTLM Relay",fac:"atk",cost:"2",ty:"Tecnica · Cred",cls:"THREAT",rel:"cattura [NTLM]"+A+"auth altrove.",kw:["STEAL","NOISE"]},
+{n:"Pass-the-Hash",fac:"atk",cost:"2",ty:"Tecnica · Move",cls:"THREAT",rel:"hash [NTLM]"+A+"Token senza password.",kw:["STEAL","TOKEN"]},
+{n:"Pass-the-Ticket",fac:"atk",cost:"2",ty:"Tecnica · Move",cls:"THREAT",rel:"[TGT]/[TGS] rubato"+A+"Token.",kw:["STEAL","TOKEN"]},
+{n:"Abuse GenericAll",fac:"atk",cost:"2",ty:"Tecnica · Esc",cls:"THREAT",rel:"WriteDACL su [Resource]/[Group]"+A+"Allow self.",kw:["ESCALATE","ACCESSCHECK"]},
+{n:"AddMember Abuse",fac:"atk",cost:"1",ty:"Tecnica · Esc",cls:"THREAT",rel:"self"+A+"[Group]; poi Logon per il Token.",kw:["MEMBEROF","LOGON","ESCALATE"]},
+{n:"Token Theft",fac:"atk",cost:"2",ty:"Tecnica · Move",cls:"THREAT",rel:"nodo con Session"+A+"Steal Token.",kw:["STEAL","SESSION"]},
+{n:"DCSync",fac:"atk",cost:"3",ty:"Tecnica · Dominance",cls:"THREAT",rel:"diritti di replica"+A+"Sync krbtgt da [DC].",kw:["SYNC","NOISE"]},
+{n:"Golden Ticket",fac:"atk",cost:"2",ty:"Tecnica · Persist",cls:"THREAT",rel:"chiave krbtgt"+A+"Forge [TGT] arbitrario.",kw:["FORGE","PERSIST","RESET"]},
+{n:"Silver Ticket",fac:"atk",cost:"1",ty:"Tecnica · Persist",cls:"THREAT",rel:"chiave di servizio"+A+"Forge [TGS].",kw:["FORGE"]},
+{n:"SID History Inject",fac:"atk",cost:"2",ty:"Tecnica · Persist",cls:"THREAT",rel:"inietta [SID] privilegiato nel Token.",kw:["TOKEN","PERSIST"]},
+{n:"Malicious GPO",fac:"atk",cost:"2",ty:"Tecnica · Esc",cls:"THREAT",rel:"WriteDACL su [GPO]"+A+"Link malevolo all'[OU].",kw:["LINK","ESCALATE"]},
+{n:"AdminSDHolder",fac:"atk",cost:"2",ty:"Tecnica · Persist",cls:"THREAT",rel:"persistenza sui [Privileged Group].",kw:["PERSIST"]}
+];
+
+const INFO={
+"KDC":{r:"Servizio Kerberos ospitato su ogni DC. Autentica l'utente (verifica chi è) e rilascia i ticket: dalla prova d'identità emette un TGT; presentando il TGT, emette un TGS per il servizio richiesto.",g:"La carta usa LOGON e TOKEN; è anche il bersaglio implicito di FORGE."},
+"Kerberos Logon":{r:"Autenticazione di rete: l'utente prova l'identità (password→hash) al KDC, ottiene il TGT, e il sistema costruisce l'Access Token con SID utente + SID dei gruppi. L'autorizzazione avviene dopo, confrontando il token con la ACL.",g:"È il trigger LOGON che produce il TOKEN."},
+"TGT":{r:"Ticket Granting Ticket: rilasciato dal KDC dopo l'autenticazione iniziale. Certifica «sei autenticato» e serve a chiedere i TGS senza reinserire la password.",g:"Bersaglio di FORGE nel Golden Ticket."},
+"TGS":{r:"Ticket Granting Service: rilasciato dal KDC presentando il TGT; valido per UN servizio/risorsa specifico, a cui viene presentato per l'accesso.",g:"Input di ACCESSCHECK; oggetto di CRACK nel Kerberoasting."},
+"NTLM":{r:"Protocollo di autenticazione challenge-response legacy, basato sull'hash della password. Usato quando Kerberos/DNS non sono disponibili. Più debole: l'hash è riutilizzabile.",g:"Materia prima di STEAL/CRACK (Pass-the-Hash, NTLM Relay)."},
+"LDAP":{r:"Lightweight Directory Access Protocol: interroga e gestisce la directory (utenti, gruppi, attributi). AD espone i suoi oggetti via LDAP; le query usano il DN. È il protocollo che autentica e autorizza l'accesso granulare.",g:"Abilita RECON lato attaccante."},
+"DNS / SRV":{r:"Il client trova il DC tramite i record SRV che i DC registrano automaticamente in DNS. Il client deve puntare all'IP del DC: senza DNS, quasi tutte le richieste falliscono e il logon al dominio non avviene.",g:"Prerequisito del LOGON."},
+
+"Forest":{r:"Confine massimo di sicurezza e replica. Insieme di uno o più alberi; le partizioni Schema e Configuration sono comuni e replicate a tutti i DC della foresta. Il primo dominio è il Forest Root Domain.",g:"REPLICATE a livello foresta; definisce i confini per TRUST."},
+"Tree":{r:"Uno o più domini con namespace DNS contiguo, in una singola istanza di AD DS.",g:"Collegato da TRUST automatici intra-forest."},
+"Domain":{r:"Unità amministrativa base e confine di policy e replica del Domain NC. Racchiude utenti, computer, gruppi e OU; crea un confine di sicurezza per le risorse.",g:"REPLICATE a livello dominio; estremità degli archi TRUST."},
+"Domain Controller":{r:"Server con ruolo AD DS. Detiene il database NTDS.DIT e la cartella SYSVOL, ospita il servizio Kerberos (KDC) e gli altri servizi AD. Best practice: almeno due per dominio per alta disponibilità.",c:"Install-ADDSDomainController · (storico: dcpromo)",g:"REDUNDANCY con ≥2 DC; bersaglio finale di SYNC."},
+"RODC":{r:"Read-Only Domain Controller: copia in sola lettura del database, per sedi periferiche insicure senza personale IT esperto. Replica le password solo secondo la Password Replication Policy (PRP).",g:"REPLICATE parziale."},
+"NTDS.DIT":{r:"File %systemroot%\\NTDS\\ntds.dit: database principale di AD, contiene credenziali utente, criteri di gruppo, impostazioni di sicurezza e configurazioni di dominio.",g:"Bersaglio di SYNC; recuperabile con RESTORE."},
+"SYSVOL":{r:"Cartella %systemroot%\\SYSVOL: volume condiviso con script di logon e policy. Replicato tra i DC.",c:"Replica: DFS-R (sostituisce FRS)",g:"REPLICATE tra DC."},
+"Schema":{r:"Partizione che definisce regole, struttura e vincoli del database: quali oggetti e attributi possono esistere. Replicata su tutti i DC della foresta.",c:"Snap-in: Active Directory Schema",g:"REPLICATE forest."},
+"Configuration":{r:"Partizione che memorizza la configurazione dell'intera foresta: siti, replica e altri componenti dei servizi di directory. Replicata su tutti i DC della foresta.",g:"REPLICATE forest."},
+"Domain NC":{r:"Domain Naming Context: partizione con tutti gli oggetti specifici del dominio (utenti, gruppi, OU, risorse). Replicata su tutti i DC del dominio.",g:"REPLICATE domain."},
+"Global Catalog":{r:"DC speciale che contiene una replica parziale in sola lettura (PAS) di tutti gli oggetti della foresta, per velocizzare le ricerche cross-dominio. Ospita i gruppi Universal.",g:"REPLICATE parziale di foresta."},
+"Organizational Unit":{r:"Contenitore che supporta l'applicazione delle GPO e la delega amministrativa. Vi si spostano gli oggetti dai container di default per poterli gestire.",c:"Snap-in: ADUC",g:"Accetta LINK, INHERIT e DELEGATE."},
+"Container":{r:"Contenitore predefinito (es. «Computers», «Users») che NON supporta Group Policy né delega amministrativa. Spostare sempre gli oggetti nelle OU.",g:"Nodo «scoperto»: non accetta LINK/DELEGATE."},
+"Site":{r:"Costrutto logico che rappresenta la struttura fisica della rete: un gruppo di subnet IP collegate da connessioni veloci e affidabili (LAN).",c:"Snap-in: Active Directory Sites and Services",g:"Governa REPLICATE inter-sito."},
+"Subnet":{r:"Subnet IP in notazione CIDR (es. 192.168.0.0/24) associata a un sito, per indicare ai client a quale DC connettersi.",g:"Indirizza il client al DC locale (REPLICATE)."},
+"Site Link":{r:"Collegamento tra due siti per la replica, con costo e intervallo definiti (es. ogni 15 minuti).",g:"Definisce il percorso e la latenza di REPLICATE."},
+"Trust":{r:"Relazione di fiducia tra domini/foreste che permette autenticazione (logon) e autorizzazione (accesso a risorse) cross-boundary. Intra-forest: automatiche, transitive, bidirezionali. Inter-forest: manuali, con DNS risolvibili e account amministrativi su entrambi. One-way o two-way.",c:"Snap-in: Active Directory Domains and Trusts",g:"Apre l'arco TRUST/TRAVERSE cross-dominio."},
+
+"User":{r:"Account utente: security principal (entità di sicurezza) con SID, salvato nell'identity store. Al logon genera l'Access Token. Identificato da UPN (m.rossi@ifts.local) e SAMAccountName (IFTS\\m.rossi).",g:"MEMBEROF dei gruppi; al LOGON produce il TOKEN."},
+"Computer":{r:"Account computer: entità di sicurezza con SID. Aggiunto al dominio stabilisce una relazione di trust con AD ed è gestito centralmente (a differenza del workgroup, con SAM locale).",g:"Può avere SESSION (token rubabili); MEMBEROF."},
+"SID":{r:"Security Identifier: valore univoco e immutabile che identifica un'entità di sicurezza (utente/gruppo/computer). Entra nell'Access Token ed è confrontato con le ACE.",g:"Componente del TOKEN; chiave dell'ACCESSCHECK."},
+"Access Token":{r:"Rilasciato al client al momento del logon. Contiene il SID dell'utente e i SID dei gruppi di cui è membro; viene confrontato con la ACL della risorsa per l'autorizzazione. Aggiornare la membership richiede un nuovo logon per rigenerarlo.",g:"Prodotto dal LOGON; input dell'ACCESSCHECK; bersaglio di STEAL/FORGE."},
+"Group · Global":{r:"Gruppo di sicurezza con scope Global: «role group» che raccoglie utenti dello stesso dominio per ruolo aziendale. Va annidato nei Domain Local (strategia IGDLA).",g:"MEMBEROF degli utenti; NEST verso Domain Local."},
+"Group · Domain Local":{r:"Gruppo di sicurezza con scope Domain Local: «rule group» che riceve i permessi (ACE) sulle risorse; può contenere membri da qualsiasi dominio della foresta.",g:"Riceve la ACE finale; accetta NEST (la «A» di IGDLA)."},
+"Group · Universal":{r:"Gruppo di sicurezza con scope Universal, per foreste multi-dominio; ospitato e replicato nel Global Catalog.",g:"MEMBEROF cross-dominio; REPLICATE nel GC."},
+"Distribution Group":{r:"Gruppo di sola distribuzione, usato per le liste email. NON ha un SID e quindi non concede permessi.",g:"Nessun effetto sul TOKEN: assegnargli permessi è inutile."},
+"Privileged Group":{r:"Gruppi amministrativi predefiniti: Domain Admins, Enterprise Admins, Schema Admins. L'appartenenza conferisce privilegi elevati su dominio/foresta/schema.",g:"MEMBEROF → token alto; bersaglio di ESCALATE."},
+"Special Identity":{r:"Identità fornite dal sistema (es. Authenticated Users, Everyone). Appartenenza dinamica gestita dal sistema, non assegnata manualmente.",g:"SID di sistema sempre presente nel TOKEN."},
+
+"Security Descriptor":{r:"Struttura che contiene le informazioni di sicurezza associate a un oggetto/risorsa: include la DACL (accessi) e la SACL (audit).",g:"Avvolge la Resource; fornisce ACCESSCHECK e AUDIT."},
+"ACL":{r:"Access Control List: elenco ordinato di ACE che definisce le protezioni di un oggetto. Termine generico; può essere DACL o SACL.",g:"Contenitore di ACE per l'ACCESSCHECK."},
+"DACL":{r:"Discretionary ACL: identifica utenti e gruppi a cui è consentito o negato l'accesso, tramite un elenco di ACE. È ciò che viene confrontato con l'Access Token. Le voci Deny prevalgono sulle Allow.",g:"Input diretto dell'ACCESSCHECK (ALLOW/DENY)."},
+"SACL":{r:"System ACL: definisce quali accessi a un oggetto proteggibile vengono monitorati e registrati (auditing). Non concede nulla: osserva.",g:"Genera AUDIT → alimenta il contatore TRACE."},
+"ACE · Allow":{r:"Access Control Entry di tipo Allow: in una ACL identifica un'entità di sicurezza (SID) e i diritti di accesso consentiti.",g:"Concede in ACCESSCHECK se il SID è nel token."},
+"ACE · Deny":{r:"Access Control Entry di tipo Deny: nega un diritto a un SID. Valutata prima delle Allow.",g:"Risolve per prima nell'ACCESSCHECK (DENY vince)."},
+"Resource / Share":{r:"Oggetto protetto (es. cartella condivisa) con un security descriptor; l'accesso è regolato dai permessi (NTFS) confrontati con l'Access Token.",g:"Bersaglio dell'ACCESSCHECK."},
+
+"GPO":{r:"Group Policy Object: insieme di impostazioni per User o Computer (Software, Windows Settings, Administrative Templates). Collegabile a Site/Domain/OU; le GPO di dominio sono memorizzate sui DC.",c:"GPM (Group Policy Management) · gpedit.msc (locali)",g:"LINK a SDOU; propaga INHERIT; accetta FILTER e HARDEN."},
+"GPO Link":{r:"Il collegamento che aggancia una GPO a un Site/Domain/OU (SDOU); definisce lo scope massimo. Un link può essere disabilitato senza cancellare la GPO, e cancellato senza eliminarla.",g:"Esegue LINK e abilita INHERIT."},
+"Inheritance":{r:"Le GPO si applicano in ordine LSDOU (Local, Site, Domain, OU) ed ereditano lungo l'albero; in conflitto vince l'ultima applicata (l'OU). Block Inheritance blocca l'eredità, Enforced la forza e batte Block.",g:"Modifica la catena INHERIT."},
+"Security Filtering":{r:"Affina il bersaglio di una GPO autorizzando/negando l'applicazione ai membri di uno specifico security group (Global), entro lo scope del link.",g:"Esegue FILTER per gruppo."},
+"WMI Filtering":{r:"Affina il bersaglio di una GPO in base a query WMI sulle caratteristiche del client (RAM, versione OS…), entro lo scope del link.",g:"Esegue FILTER per attributo."},
+"Loopback Processing":{r:"Applica agli utenti le impostazioni della GPO collegata al computer su cui accedono (modalità Merge o Replace). Tipico per kiosk, sale riunioni, terminal server.",g:"Variante di INHERIT lato computer."},
+"PSO":{r:"Password Settings Object: policy password granulare applicata a gruppi o utenti specifici, oltre alla Default Domain Policy.",c:"ADAC → System → Password Settings Container",g:"FILTER mirato + HARDEN sulle credenziali."},
+"RSoP":{r:"Resultant Set of Policy: l'effetto netto cumulativo di tutte le GPO su un utente/computer, con il calcolo delle precedenze in caso di conflitto.",c:"gpresult · rsop.msc",g:"Risolve la catena INHERIT (calcolo precedenza)."},
+"Default Domain Policy":{r:"GPO predefinita in ogni dominio: definisce le policy degli account AD — password, account lockout e policy di Kerberos.",g:"INHERIT a livello dominio + HARDEN."},
+"Default DC Policy":{r:"GPO predefinita: definisce le policy di auditing per i domain controller e per Active Directory.",g:"Imposta AUDIT sui DC."},
+"GPSI":{r:"Group Policy Software Installation: distribuzione massiva di pacchetti .msi tramite GPO.",g:"Variante di LINK (deploy software)."},
+"CSE":{r:"Client-Side Extensions: componenti software sul client che applicano le impostazioni GPO ricevute dal DC. L'applicazione è gestita dal client («pull»); refresh ogni 90–120 minuti.",c:"gpupdate (per forzare)",g:"Esegue INHERIT lato client."},
+
+"FSMO · Schema Master":{r:"Ruolo FSMO forest-wide: unico DC che può effettuare modifiche allo schema. Per default sul Forest Root DC.",c:"Snap-in: Active Directory Schema · netdom query fsmo",g:"TRANSFER/SEIZE; dopo un seize il vecchio DC va decommissionato."},
+"FSMO · Domain Naming":{r:"Ruolo FSMO forest-wide: aggiunge e rimuove domini dalla/alla foresta.",c:"Snap-in: Active Directory Domains and Trusts",g:"TRANSFER/SEIZE; dopo un seize il vecchio DC va decommissionato."},
+"FSMO · RID Master":{r:"Ruolo FSMO domain-wide: fornisce «pool» di RID ai DC, poi usati per comporre i SID dei nuovi oggetti creati.",c:"Snap-in: Active Directory Users and Computers",g:"TRANSFER/SEIZE; dopo un seize il vecchio DC va decommissionato."},
+"FSMO · Infrastructure":{r:"Ruolo FSMO domain-wide: mantiene aggiornate le membership dei gruppi quando vi sono membri di altri domini, chiedendo gli aggiornamenti al GC. Va su un DC non-GC, a meno che tutti i DC siano GC (allora il ruolo è superfluo).",g:"TRANSFER/SEIZE (rimettibile online dopo seize)."},
+"FSMO · PDC Emulator":{r:"Ruolo FSMO domain-wide con più funzioni: emula il PDC (compatibilità), è il riferimento password (primo a conoscere le modifiche), la sorgente oraria del dominio e il target predefinito delle modifiche alle GPO.",g:"Nodo critico (REDUNDANCY); TRANSFER/SEIZE (rimettibile online dopo seize)."},
+"KCC":{r:"Knowledge Consistency Checker: processo automatico che disegna la topologia di replica più efficiente tra i DC dello stesso sito.",g:"Ottimizza REPLICATE intra-sito."},
+"ISTG / Bridgehead":{r:"Intersite Topology Generator: ruolo automatico che genera le connessioni di replica tra siti diversi, tramite i Bridgehead server.",g:"Ottimizza REPLICATE inter-sito."},
+"Replication (DFS-R)":{r:"Replica multimaster delle partizioni e di SYSVOL tra DC. DFS-R è la modalità moderna che sostituisce FRS; la migrazione FRS→DFS-R è irreversibile.",g:"Esegue REPLICATE; con latenza dipendente dai Site Link."},
+"FRS (legacy)":{r:"File Replication Service: meccanismo di replica di SYSVOL legacy. Se presente, va migrato a DFS-R; la migrazione è irreversibile.",g:"Vecchia forma di REPLICATE."},
+"Functional Level":{r:"Definisce le funzionalità disponibili e la versione minima dei DC. Il livello di dominio può essere ≥ del livello di foresta ma non inferiore. Non va aumentato se esistono DC di versione precedente; l'aumento è irreversibile.",c:"AD Domains and Trusts (foresta) · ADUC (dominio)",g:"Gate: abilita/blocca funzioni; scelta irreversibile."},
+"Backup (wbadmin)":{r:"Backup dello stato di sistema/AD per la business continuity.",c:"Windows Server Backup (wizard) · wbadmin.exe (script)",g:"Abilita RESTORE."},
+"Authoritative Restore":{r:"Ripristina oggetti da backup marcandoli come «autorevoli» (versione incrementata), così la replica li ripropaga sugli altri DC sovrascrivendone le copie. Si usa per recuperare oggetti cancellati.",c:"ntdsutil (authoritative restore)",g:"RESTORE che impone via REPLICATE."},
+"Non-auth Restore":{r:"Ripristina il DC da backup; al riavvio il DC riceve via replica le modifiche più recenti dagli altri DC, tornando allineato. È il ripristino «normale» di un DC.",g:"RESTORE che riceve REPLICATE."},
+"Recycle Bin":{r:"Active Directory Recycle Bin: una volta abilitata, consente di ripristinare oggetti eliminati (con tutti gli attributi) dall'interfaccia «Deleted Objects».",c:"ADAC → abilitare Recycle Bin → Deleted Objects",g:"RECYCLE di un oggetto eliminato."},
+"Transfer / Seize FSMO":{r:"Spostamento dei ruoli FSMO. Transfer (DC online): per bilanciare, prima di manutenzione o demote. Seize (DC irraggiungibile): forzatura d'emergenza. Dopo seize di Schema/RID/Domain Naming il vecchio DC va decommissionato; PDC e Infrastructure possono tornare online.",c:"Move-ADDirectoryServerOperationMasterRole -Identity DC01 -OperationMasterRole … · ntdsutil → seize",g:"Esegue TRANSFER/SEIZE."},
+"Reset krbtgt ×2":{r:"Reset della password dell'account di servizio krbtgt, da eseguire due volte (per via del versioning della chiave e della finestra di replica), così da invalidare i Golden Ticket esistenti.",g:"RESET che annulla ogni FORGE; passo chiave dell'IR."},
+"Incident Response":{r:"Ciclo di gestione dell'incidente: rilevamento → contenimento → eradicazione → recupero.",g:"Innescato dalla soglia TRACE; abilita HARDEN e RESET."},
+
+"BloodHound":{r:"[Tecnica d'attacco] Strumento di enumerazione che raccoglie via LDAP le relazioni AD (membership, sessioni, diritti su oggetti) e calcola i percorsi più brevi verso Domain Admin. Difesa: monitorare le query LDAP, ridurre archi e sessioni privilegiate.",g:"RECON: rivela gli archi adiacenti."},
+"LDAP Enum":{r:"[Tecnica d'attacco] Enumerazione della directory via query LDAP: utenti, gruppi, SPN, attributi. Difesa: limitare le letture anonime e monitorare le query.",g:"RECON sulla Directory."},
+"Kerberoasting":{r:"[Tecnica d'attacco] Si richiede un TGS per un account di servizio (con SPN); il ticket è cifrato con l'hash della password del servizio e si cracca offline. Difesa: password lunghe o gMSA (Managed Service Account).",g:"CRACK: TGS → Token."},
+"AS-REP Roast":{r:"[Tecnica d'attacco] Per account con pre-autenticazione Kerberos disabilitata, si ottiene materiale cifrato craccabile offline. Difesa: abilitare la pre-autenticazione.",g:"CRACK senza preauth."},
+"NTLM Relay":{r:"[Tecnica d'attacco] Si intercetta un'autenticazione NTLM e la si inoltra a un altro servizio impersonando la vittima. Difesa: SMB signing, channel binding, dismissione di NTLM.",g:"STEAL: cattura e inoltro."},
+"Pass-the-Hash":{r:"[Tecnica d'attacco] Si usa l'hash NTLM rubato per autenticarsi senza conoscere la password in chiaro. Difesa: tiering amministrativo, LAPS, Credential Guard.",g:"STEAL → TOKEN senza password."},
+"Pass-the-Ticket":{r:"[Tecnica d'attacco] Si riusa un TGT/TGS rubato dalla memoria di una macchina. Difesa: igiene delle credenziali, riavvii, protezione LSASS.",g:"STEAL → TOKEN da ticket."},
+"Abuse GenericAll":{r:"[Tecnica d'attacco] Con il diritto GenericAll/WriteDACL su un oggetto si riscrive la sua ACL per concedersi accesso o si resetta la password della vittima. Difesa: hardening e revisione delle ACL.",g:"ESCALATE riscrivendo la DACL (ACCESSCHECK)."},
+"AddMember Abuse":{r:"[Tecnica d'attacco] Con diritto di scrittura su un gruppo, l'attaccante vi si aggiunge come membro; serve un nuovo logon per ottenere i SID nel token. Difesa: limitare i diritti di scrittura sui gruppi privilegiati.",g:"MEMBEROF + LOGON → ESCALATE."},
+"Token Theft":{r:"[Tecnica d'attacco] Su una macchina compromessa con la sessione attiva di un admin, si rubano token/credenziali dalla memoria (es. Mimikatz). Difesa: non usare Domain Admin sulle workstation (tiering).",g:"STEAL da un nodo con SESSION."},
+"DCSync":{r:"[Tecnica d'attacco] Si abusa del diritto di replica («Replicating Directory Changes») per chiedere al DC le credenziali, incluso l'hash di krbtgt, senza eseguire codice sul DC. Difesa: restringere i diritti di replica ai soli DC.",g:"SYNC: estrae krbtgt dal DC."},
+"Golden Ticket":{r:"[Tecnica d'attacco] Con l'hash di krbtgt si forgia un TGT arbitrario (qualsiasi utente e gruppi), valido a lungo e indipendente dal KDC. Difesa: reset di krbtgt due volte.",g:"FORGE del TGT; PERSIST finché non c'è RESET."},
+"Silver Ticket":{r:"[Tecnica d'attacco] Con l'hash di un account di servizio si forgia un TGS per quel servizio, bypassando il KDC. Difesa: password di servizio forti, monitoraggio degli accessi.",g:"FORGE del TGS."},
+"SID History Inject":{r:"[Tecnica d'attacco] Si inserisce un SID privilegiato nell'attributo SID History di un account per ereditarne i diritti nel token. Difesa: SID filtering sui trust.",g:"Inietta un SID nel TOKEN; PERSIST."},
+"Malicious GPO":{r:"[Tecnica d'attacco] Con WriteDACL su una GPO collegata (es. all'OU dei DC) si inseriscono impostazioni malevole applicate a tutti gli oggetti nello scope. Difesa: delega rigorosa e auditing delle GPO.",g:"LINK malevolo → ESCALATE."},
+"AdminSDHolder":{r:"[Tecnica d'attacco] Oggetto che, tramite il processo SDProp, reimposta periodicamente le ACL dei gruppi protetti; abusato per ristabilire accessi nascosti (persistenza). Difesa: monitorare AdminSDHolder e i gruppi protetti.",g:"PERSIST sui Privileged Group."}
+};
+
+// KW_INFO — significato reale (fuori dal gioco) di ogni parola-chiave meccanica.
+// Fonte: MOD 3.3 (AD DS — BERNABEI) + documentazione Microsoft.
+// Struttura: { "NOME_KW": { r, c? } }
+//   r = spiegazione AD/Windows reale (cosa succede davvero nel sistema)
+//   c = comandi/strumenti opzionali
+const KW_INFO={
+"LOGON":{r:"Il logon è il processo con cui la LSA (Local Security Authority) verifica le credenziali dell'utente tramite Kerberos o NTLM, poi costruisce l'Access Token: un oggetto kernel che contiene il SID dell'utente, i SID di tutti i gruppi di cui è membro e i privilegi assegnati. Ogni processo avviato dall'utente eredita una copia del token. Per aggiornare la membership dei gruppi è necessario un nuovo logon.",c:"Event ID 4624 (logon riuscito) · 4625 (logon fallito)"},
+"TOKEN":{r:"L'Access Token è un oggetto del kernel Windows creato al momento del logon. Contiene: SID utente, SID dei gruppi (incluse le Special Identity di sistema), privilegi e livello di integrità. Il kernel lo confronta con la DACL della risorsa ad ogni AccessCheck. Non si aggiorna automaticamente: se la membership di un gruppo cambia, il token resta invariato finché l'utente non esegue un nuovo logon.",c:"whoami /all — mostra token corrente"},
+"MEMBEROF":{r:"In AD, l'attributo memberOf è il back-link dell'attributo member nei gruppi. Quando un account è aggiunto a un gruppo, il SID di quel gruppo viene incluso nell'Access Token al successivo logon. I gruppi annidati (NEST) propagano i SID transitivamente: essere membro di un gruppo che è membro di un Domain Local fa sì che tutti i SID della catena entrino nel token.",c:"Get-ADUser -Identity utente -Properties MemberOf"},
+"NEST":{r:"L'annidamento dei gruppi permette a un gruppo di essere membro di un altro gruppo. La strategia raccomandata è IGDLA: gli utenti (I) entrano nei gruppi Global (G), i Global si annidano nei Domain Local (DL), i Domain Local ricevono le ACE (A) sulle risorse. Questo separa il «chi sei» (Global = role) dal «cosa puoi fare» (Domain Local = rule), rendendo la gestione scalabile.",c:"Add-ADGroupMember -Identity 'DL-Risorse' -Members 'GG-Contabilita'"},
+"ACCESSCHECK":{r:"La routine del kernel SeAccessCheck confronta i SID del Token del richiedente con ogni ACE nella DACL della risorsa. L'algoritmo: (1) se la DACL è null, accesso totale; (2) se vuota, accesso negato; (3) altrimenti le ACE Deny vengono valutate prima delle Allow. L'accesso è concesso solo se tutti i diritti richiesti sono coperti da ACE Allow senza Deny corrispondenti.",c:"AccessChk (Sysinternals) · icacls · Get-Acl"},
+"ALLOW / DENY":{r:"I due tipi di ACE in una DACL. Una ACE Allow concede uno o più diritti (es. Read, Write, Full Control) a un SID specifico. Una ACE Deny li nega esplicitamente ed è valutata prima di qualsiasi Allow, indipendentemente dalla posizione nella lista. Attenzione: una DACL null (assente) concede accesso completo al proprietario; una DACL vuota nega l'accesso a tutti.",c:"icacls · Set-Acl · ADSI Edit per ACE su oggetti AD"},
+"LINK":{r:"Collegare una GPO a un container SDOU (Site, Domain, Organizational Unit) definisce lo scope di applicazione della policy. Senza link la GPO esiste nel dominio ma non si applica a nessun oggetto. Un link può essere disabilitato (la GPO resta collegata ma non si applica) o rimosso (la GPO resta nel dominio). Una GPO può avere più link; un container può avere più GPO collegate.",c:"New-GPLink · Set-GPLink · Group Policy Management Console"},
+"INHERIT":{r:"Le GPO si applicano in ordine LSDOU (Local → Site → Domain → OU): prima le policy locali, poi quelle del sito, poi del dominio, poi delle OU dalla più lontana alla più vicina all'oggetto. In conflitto vince l'ultima applicata. Block Inheritance su un'OU blocca le GPO dei genitori (tranne quelle Enforced). Enforced su un link forza la GPO a prevalere su Block Inheritance.",c:"gpresult /r · rsop.msc · gpupdate /force"},
+"FILTER":{r:"Il Security Filtering affina il bersaglio di una GPO: l'oggetto deve avere i permessi «Apply Group Policy» e «Read» sul GPO object. Per default è concesso ad «Authenticated Users»; restringendolo a un gruppo specifico, solo i membri del gruppo ricevono la policy. Il WMI Filtering usa query WMI (es. versione OS, RAM) per condizionare l'applicazione ai soli computer che soddisfano i criteri.",c:"Set-GPPermission · WMI Filter Editor in GPMC"},
+"DELEGATE":{r:"La delega amministrativa in AD assegna diritti specifici su OU o singoli oggetti ad identità non-admin, modificando le ACE sulla DACL del container. Esempi: delegare il reset della password di una OU a un operatore helpdesk, o la gestione dei computer a un team IT di sede. Principio del privilegio minimo: ogni operatore ha solo i diritti necessari al suo compito.",c:"Delegation of Control Wizard (ADUC) · ADSI Edit (ACE dirette) · dsacls"},
+"REPLICATE":{r:"La replica multimaster di Active Directory propaga le modifiche tra tutti i DC. Ogni modifica riceve un numero di sequenza aggiornamento (USN) e un timestamp. Intra-sito: automatica, entro ~15 secondi dalla notifica. Inter-sito: dipende dal Site Link (intervallo minimo 15 minuti, costo, schedule). La convergenza è garantita: tutte le modifiche raggiungono tutti i DC, ma con latenza variabile.",c:"repadmin /showrepl · repadmin /replsummary · Get-ADReplicationFailure"},
+"AUDIT":{r:"L'auditing di sicurezza AD si configura su due livelli: la Advanced Audit Policy (via GPO → Computer → Windows Settings → Security → Advanced Audit) definisce quali categorie monitorare; le SACL sugli oggetti AD specificano quali accessi generano un evento. Gli Event ID chiave: 4662 (accesso a oggetto AD), 4738 (modifica account utente), 4728/4732/4756 (aggiunta a gruppi privilegiati).",c:"auditpol /get /category:* · ADSI Edit (SACL) · Event Viewer"},
+"TRACE":{r:"(Basato su) Il Security Log di Windows registra ogni evento di audit in log strutturati. I SIEM (Security Information and Event Management) come Microsoft Sentinel, Splunk o QRadar raccolgono, correlano e analizzano questi eventi per rilevare anomalie. Event ID chiave per AD: 4768/4769 (TGT/TGS Kerberos), 4776 (NTLM), 4624/4625 (logon), 4672 (logon con privilegi speciali).",c:"Event Viewer (eventvwr) · Get-WinEvent · Microsoft Sentinel"},
+"NOISE":{r:"(Basato su) Le tecniche d'attacco generano artefatti forensi: volumi anomali di query LDAP (BloodHound), richieste di TGS per SPN inusuali (Kerberoasting), connessioni SMB a catena (NTLM Relay), accessi a LSASS (credential theft). Il rapporto segnale/rumore è fondamentale per il rilevamento: attacchi «silenziosi» (basso Noise) evitano soglie di detection; attacchi rumorosi vengono rilevati prima.",c:"Microsoft Defender for Identity · Event ID 4769 (TGS anomali) · 4624 (logon massivi)"},
+"RECON":{r:"La ricognizione in ambienti AD sfrutta i permessi di lettura predefiniti: per default, tutti gli utenti del dominio possono enumerare utenti, gruppi, computer e SPN via LDAP senza privilegi elevati. Strumenti come BloodHound raccolgono queste informazioni e calcolano i percorsi di attacco più brevi verso Domain Admin. La difesa è il monitoraggio delle query LDAP anomale, non la negazione della lettura (romperebbe le applicazioni).",c:"ldapsearch · ADExplorer (Sysinternals) · PowerView · Get-ADUser/Group"},
+"TRAVERSE":{r:"(Basato su) Il lateral movement è la capacità di un attaccante di spostarsi da un sistema compromesso ad altri nella stessa rete, usando le credenziali o i token già acquisiti. In AD, le tecniche includono: Pass-the-Hash, Pass-the-Ticket, uso di sessioni remote (WMI, PSRemoting, RDP, SMB). Il tiering amministrativo (Tier 0/1/2) limita il blast radius impedendo l'uso di credenziali privilegiate su sistemi non sicuri.",c:"Event ID 4648 (logon con credenziali esplicite) · 4624 tipo 3 (rete)"},
+"COMPROMISE":{r:"(Basato su) La compromissione di un account o sistema AD è la condizione in cui un attaccante ottiene controllo sufficiente: esecuzione di codice remoto, accesso a dati, persistenza. In AD, la compromissione di un account Domain Admin equivale alla compromissione dell'intera foresta (ogni dato, ogni sistema). Il principio di Least Privilege e il tiering limitano il blast radius di ogni singola compromissione.",c:"Indicatori: Event ID 4672 (privilegi speciali) · 4688 (process creation anomalo)"},
+"ESCALATE":{r:"L'escalation di privilegi in AD consiste nell'elevare i propri diritti verso identità con più poteri. Tecniche comuni: abuso di ACL deboli (WriteDACL, GenericAll, WriteOwner su oggetti AD), sfruttamento di delega Kerberos non vincolata, aggiunta arbitraria a gruppi privilegiati, modifica della DACL per concedersi diritti su oggetti ad alto valore. La difesa principale è la revisione periodica delle ACL e l'uso di BloodHound in modalità difensiva.",c:"BloodHound (analisi percorsi) · Get-ObjectAcl (PowerView) · dsacls"},
+"CRACK":{r:"Il cracking offline delle credenziali si esegue su materiale catturato (hash NTLM, ticket Kerberos cifrati) senza ulteriore traffico verso il DC, usando Hashcat o John the Ripper con wordlist e regole. Le password deboli cedono in minuti; password lunghe e casuali (≥25 caratteri) sono impraticabili da craccare. I gMSA (Group Managed Service Accounts) usano password da 240 bit casuali gestite da AD: impossibili da craccare.",c:"Hashcat · John the Ripper — difesa: password policy (PSO), gMSA per i service account"},
+"STEAL":{r:"Il furto di credenziali dalla memoria del processo LSASS (Local Security Authority Subsystem Service): hash NTLM, ticket Kerberos, e nelle versioni vecchie di Windows credenziali in chiaro (WDigest). Richiede privilegi SYSTEM o SeDebugPrivilege. Difesa: Credential Guard (isola LSASS in una VM sicura via Hyper-V), Protected Users security group (disabilita NTLM e WDigest per i membri), riduzione delle sessioni privilegiate.",c:"Mimikatz · Rubeus — difesa: Credential Guard · Protected Users · Event ID 4656/4663 su LSASS"},
+"SESSION":{r:"Una sessione attiva in Windows è un logon con token ancora valido e credenziali potenzialmente residenti in memoria LSASS. Ogni tipo di logon (interattivo, rete, servizio, batch) ha comportamenti diversi: il logon di rete (tipo 3, es. SMB) non lascia credenziali in chiaro in memoria; il logon interattivo (tipo 2) e il logon remoto interattivo (tipo 10, RDP) sì. L'igiene delle sessioni (no Domain Admin su workstation) è difesa fondamentale.",c:"query session · Event ID 4624 (logon) · 4634/4647 (logoff)"},
+"FORGE":{r:"La falsificazione di ticket Kerberos richiede la chiave crittografica dell'account target: hash NTLM di krbtgt per il Golden Ticket (TGT arbitrario, qualsiasi utente/gruppo, validità personalizzabile), hash del service account per il Silver Ticket (TGS per quel servizio specifico, bypassa il KDC). La chiave è derivata dalla password: il reset della password invalida la chiave e quindi i ticket forgiati.",c:"Mimikatz kerberos::golden / silver — difesa: Reset krbtgt ×2 · Protected Users"},
+"SYNC":{r:"DCSync sfrutta il protocollo di replica MS-DRSR (Directory Replication Service Remote Protocol): con i diritti DS-Replication-Get-Changes e DS-Replication-Get-Changes-All sull'oggetto dominio, l'attaccante chiede al DC le credenziali di qualsiasi account come se fosse un altro DC, senza eseguire codice sul server. Permette di estrarre l'hash di krbtgt, necessario per i Golden Ticket. Difesa: restringere i diritti di replica ai soli DC tramite ACL sull'oggetto dominio.",c:"Mimikatz lsadump::dcsync — difesa: ACL sul Domain Object · Event ID 4662 con GUID replica"},
+"PERSIST":{r:"La persistenza post-compromissione in AD comprende tecniche che sopravvivono a reset di password e IR parziale: Golden Ticket (valido finché krbtgt non è resettato 2 volte), SID History injection (SID privilegiato nell'attributo sidHistory), AdminSDHolder abuse (SDProp reimposta le ACL dei gruppi protetti ogni 60 minuti), modifica delle ACE sull'oggetto dominio per mantenere i diritti di replica.",c:"Monitoraggio: Event ID 4765 (SID History aggiunto) · modifiche su AdminSDHolder · diritti di replica"},
+"RESET":{r:"Il reset della password invalida l'hash NTLM corrente e i ticket Kerberos di lunga durata dell'account. Per l'account krbtgt (la chiave maestra di tutta l'autenticazione Kerberos del dominio) va eseguito due volte con un intervallo ≥ il massimo ticket lifetime (default 10 ore): la prima volta aggiorna la chiave corrente, la seconda elimina quella precedente ancora accettata dai DC per la verifica dei TGT in transito.",c:"Set-ADAccountPassword · Reset-KrbtgtKeys.ps1 (script Microsoft) — il reset krbtgt causa re-autenticazione di tutti gli utenti"},
+"HARDEN":{r:"Il hardening di Active Directory comprende: tiering amministrativo (Tier 0 = DC/AD, Tier 1 = server, Tier 2 = workstation; le credenziali non scendono di tier), Protected Users security group (disabilita NTLM, DES, RC4, WDigest, Kerberos non vincolato per i membri), LAPS (password univoca e randomica per ogni local admin), PAW (Privileged Access Workstation), disabilitazione di NTLM, SMB signing, rimozione di SPN non necessari.",c:"Protected Users · LAPS · tiering · Microsoft Security Compliance Toolkit"},
+"TRANSFER / SEIZE":{r:"Il trasferimento graceful (Transfer) di un ruolo FSMO si esegue con il DC detentore online. Il seize forzato si usa solo con il DC irraggiungibile (guasto, corruzione). Dopo il seize di Schema Master, Domain Naming Master o RID Master il vecchio DC non deve tornare online: potrebbe riprendere il ruolo causando conflitti di SID o oggetti duplicati. PDC Emulator e Infrastructure Master possono tornare online senza rischi.",c:"Move-ADDirectoryServerOperationMasterRole · ntdsutil → seize · netdom query fsmo"},
+"RESTORE / RECYCLE":{r:"Tre modalità di ripristino AD. Non-authoritative restore: il DC si ripristina da backup e poi riceve via replica le modifiche più recenti dagli altri DC. Authoritative restore: ntdsutil marca gli oggetti ripristinati con una version number elevata così che vincano sulla replica e si propaghino agli altri DC (usato per recuperare oggetti cancellati prima di Recycle Bin). Active Directory Recycle Bin: ripristino senza downtime di oggetti con tutti gli attributi intatti.",c:"wbadmin · ntdsutil (authoritative restore) · ADAC → Deleted Objects (Recycle Bin)"},
+"REDUNDANCY":{r:"La ridondanza in Active Directory richiede almeno 2 DC per dominio per garantire alta disponibilità di autenticazione (KDC Kerberos), Group Policy, DNS e SYSVOL. I ruoli FSMO sono unici per definizione (single-master): non si duplicano ma si trasferiscono. La ridondanza del servizio si ottiene pre-pianificando il Transfer in caso di manutenzione e il Seize in caso di guasto. Best practice: i 2 DC su host fisici/cluster diversi.",c:"Get-ADDomainController -Filter * · repadmin /replsummary"},
+"TRUST":{r:"Le trust di AD usano Kerberos per autenticazione cross-boundary. Intra-forest: automatiche al momento della creazione del dominio figlio, transitive e bidirezionali (tutti i domini della foresta si fidano reciprocamente). Inter-forest: manuali, non transitive per default, richiedono DNS resolution reciproca. Il SID filtering (SID Quarantine) sulle trust inter-forest blocca i SID non appartenenti al dominio di origine, proteggendo da SID History injection cross-forest.",c:"New-ADTrust · netdom trust · Active Directory Domains and Trusts snap-in"}
+};
+
+// ===== RIFERIMENTI AL COMPENDIO =====
+// Ogni termine (carta o keyword) punta ai passaggi del compendio (compendio.html)
+// in cui quel processo è identificato e funzionale. I valori sono numeri di
+// capitolo/sezione/regola; index.html li converte in àncore (#sec-N / #s-N-M / #r-N-M-K).
+
+// Fallback per classe, se la carta non è in TERM_REF
+const CLS_REF={PROTOCOL:"5",DIRECTORY:"3",IDENTITY:"4",ACCESS:"6",POLICY:"7",TOPOLOGY:"8",THREAT:"12"};
+
+// Riferimento puntuale per nome-carta → sezioni del compendio
+const TERM_REF={
+// PROTOCOL
+"KDC":["5.3","5.4"],"Kerberos Logon":["5.2","5.3"],"TGT":["5.3"],"TGS":["5.4","5.5"],
+"NTLM":["5.6"],"LDAP":["3.3","12.1"],"DNS / SRV":["5.1"],
+// DIRECTORY
+"Forest":["3.1"],"Tree":["3.2"],"Domain":["3.2"],"Domain Controller":["3.2","5.1"],
+"RODC":["3.2"],"NTDS.DIT":["3.2"],"SYSVOL":["8.3"],"Schema":["2.3","3.3"],
+"Configuration":["3.3"],"Domain NC":["3.3"],"Global Catalog":["3.3"],
+"Organizational Unit":["3.4"],"Container":["3.4"],"Site":["3.5"],"Subnet":["3.5"],
+"Site Link":["3.5","8.2"],"Trust":["11.1","11.2"],
+// IDENTITY
+"User":["4.1","6.1"],"Computer":["4.1"],"SID":["1.3","2.4"],"Access Token":["6.1","6.2"],
+"Group · Global":["4.3","4.4"],"Group · Domain Local":["4.3","4.4"],"Group · Universal":["4.3"],
+"Distribution Group":["4.2"],"Privileged Group":["4.5"],"Special Identity":["4.5"],
+// ACCESS
+"Security Descriptor":["6.3"],"ACL":["6.3"],"DACL":["6.3","6.4"],"SACL":["6.5","13.1"],
+"ACE · Allow":["6.3","6.4"],"ACE · Deny":["6.4"],"Resource / Share":["6.4"],
+// POLICY
+"GPO":["7.1"],"GPO Link":["7.2"],"Inheritance":["7.3","7.4"],"Security Filtering":["7.5"],
+"WMI Filtering":["7.5"],"Loopback Processing":["7.6"],"PSO":["7.7"],"RSoP":["7.6"],
+"Default Domain Policy":["7.7"],"Default DC Policy":["7.7","13.1"],"GPSI":["7.1"],"CSE":["7.6"],
+// TOPOLOGY
+"FSMO · Schema Master":["9.1","9.2"],"FSMO · Domain Naming":["9.1","9.2"],
+"FSMO · RID Master":["9.1","2.4"],"FSMO · Infrastructure":["9.1"],"FSMO · PDC Emulator":["9.1"],
+"KCC":["8.2"],"ISTG / Bridgehead":["8.2"],"Replication (DFS-R)":["8.1","8.3"],
+"FRS (legacy)":["8.3"],"Functional Level":["10.4"],"Backup (wbadmin)":["10.1"],
+"Authoritative Restore":["10.2"],"Non-auth Restore":["10.2"],"Recycle Bin":["10.3"],
+"Transfer / Seize FSMO":["9.2"],"Reset krbtgt ×2":["13.4"],"Incident Response":["13.3"],
+// THREAT
+"BloodHound":["12.1"],"LDAP Enum":["12.1"],"Kerberoasting":["12.2"],"AS-REP Roast":["12.2"],
+"NTLM Relay":["12.2","5.6"],"Pass-the-Hash":["12.4"],"Pass-the-Ticket":["12.4"],
+"Abuse GenericAll":["12.3"],"AddMember Abuse":["12.3","6.2"],"Token Theft":["12.4"],
+"DCSync":["12.5"],"Golden Ticket":["12.5","13.4"],"Silver Ticket":["12.5"],
+"SID History Inject":["12.5","11.3"],"Malicious GPO":["12.3","7.2"],"AdminSDHolder":["12.5"]
+};
+
+// Riferimento per keyword (meccanica) → sezioni del compendio
+const KW_REF={
+"LOGON":["5.2","6.1"],"TOKEN":["6.1","6.2"],"MEMBEROF":["4.4","6.1"],"NEST":["4.4"],
+"ACCESSCHECK":["6.4"],"ALLOW / DENY":["6.3","6.4"],"LINK":["7.2"],"INHERIT":["7.3","7.4"],
+"FILTER":["7.5"],"DELEGATE":["3.4"],"REPLICATE":["8.1","8.2"],"AUDIT":["6.5","13.1"],
+"TRACE":["13.1","13.2"],"NOISE":["13.2"],"RECON":["12.1"],"TRAVERSE":["12.4"],
+"COMPROMISE":["12.4"],"ESCALATE":["12.3"],"CRACK":["12.2"],"STEAL":["12.2","12.4"],
+"SESSION":["12.4"],"FORGE":["12.5"],"SYNC":["12.5"],"PERSIST":["12.5"],
+"RESET":["13.4"],"HARDEN":["12.3","13"],"TRANSFER / SEIZE":["9.2"],
+"RESTORE / RECYCLE":["10.2","10.3"],"REDUNDANCY":["8.1"],"TRUST":["11.1","11.2"]
+};
+
+</script>
+<script>
+function E(s){return s.replace(/\[(.+?)\]/g,'<span class="el" data-term="$1">$1</span>');}
+function slug(s){return 'leg-'+s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');}
+function kwid(s){return 'kw-'+s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');}
+
+/* ---- COMPENDIUM REFERENCES ---- */
+const CARD_CLS={}; CARDS.forEach(c=>CARD_CLS[c.n]=c.cls);
+function cmpAnchor(ref){
+  const p=String(ref).split('.');
+  const a=p.length===1?('sec-'+p[0]):p.length===2?('s-'+p.join('-')):('r-'+p.join('-'));
+  return '#'+a;
+}
+function refsFor(key,isKw){
+  if(isKw) return (typeof KW_REF!=='undefined'&&KW_REF[key])||[];
+  if(typeof TERM_REF!=='undefined'&&TERM_REF[key]) return TERM_REF[key];
+  const cls=CARD_CLS[key];
+  return (cls&&typeof CLS_REF!=='undefined'&&CLS_REF[cls])?[CLS_REF[cls]]:[];
+}
+function cmpLinks(refs,cls){
+  return (refs||[]).map(r=>`<a class="${cls}" href="${cmpAnchor(r)}" title="Compendio §${r}">§ ${r}</a>`).join(' ');
+}
+
+document.getElementById('kwgrid').innerHTML = KW.map(k=>`<div class="kw ${k[1]}" id="${kwid(k[0])}" data-kw="${k[0].replace(/"/g,'&quot;')}" style="scroll-margin-top:120px"><b>${k[0]}</b><span>${k[2]}</span></div>`).join('');
+
+/* ---- RENDER CARDS ---- */
+const CLS_ART={PROTOCOL:'PT',DIRECTORY:'DIR',IDENTITY:'ID',ACCESS:'ACC',POLICY:'POL',TOPOLOGY:'TOP',THREAT:'THR'};
+const grid=document.getElementById('cards'), countEl=document.getElementById('count'), noHits=document.getElementById('nohits');
+let curCls='all', curQ='';
+function norm(s){return (s||'').toLowerCase();}
+function cardMatches(c,q){
+  if(!q) return true;
+  const info=INFO[c.n]||{};
+  return norm(c.n).includes(q)||norm(c.cls).includes(q)||norm(c.ty).includes(q)
+    ||c.kw.some(k=>norm(k).includes(q))||norm(c.rel).includes(q)
+    ||norm(info.r).includes(q)||norm(info.g).includes(q);
+}
+function render(){
+  grid.innerHTML=''; let shown=0; const q=curQ.toLowerCase();
+  CARDS.forEach(c=>{
+    if(curCls!=='all' && c.cls!==curCls) return;
+    if(!cardMatches(c,q)) return; shown++;
+    const sys=c.cost==='S';
+    const chips=c.kw.map(k=>`<span class="chip" data-kw="${k.replace(/"/g,'&quot;')}">${k}</span>`).join('');
+    const id=slug(c.n);
+    const wm=CLS_ART[c.cls]||c.cls.slice(0,3);
+    const el=document.createElement('div');
+    el.className='card '+c.fac;
+    el.innerHTML=`
+      <div class="c-art">
+        <div class="c-cost ${sys?'sys':''}">${c.cost}</div>
+        <div class="c-type">${c.ty}</div>
+        <div class="c-art-wm">${wm}</div>
+        <div class="c-art-fade"></div>
+      </div>
+      <div class="c-ribbon">
+        <a class="c-title" href="#${id}" data-term="${c.n.replace(/"/g,'&quot;')}">${c.n}</a>
+        <div class="c-meta">${c.ty} · ${c.cls}</div>
+      </div>
+      <div class="c-desc"><div class="rel">${E(c.rel)}</div></div>
+      ${chips?`<div class="c-kwbar">${chips}</div>`:''}
+      <div class="leglink"><a href="#${id}">→ legenda AD</a></div>`;
+    grid.appendChild(el);
+  });
+  countEl.textContent=shown+' / '+CARDS.length+' carte';
+  noHits.style.display=shown?'none':'block';
+}
+document.getElementById('filters').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#filters button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); curCls=b.dataset.f; render();
+});
+
+/* ---- RENDER LEGEND ---- */
+const CLS_LABEL={PROTOCOL:"Protocol — motore neutro",DIRECTORY:"Directory — architettura",IDENTITY:"Identity — principal & token",ACCESS:"Access — controllo accessi",POLICY:"Policy — Group Policy",TOPOLOGY:"Topology / Ops — siti, repliche, FSMO, DR",THREAT:"Threat — tecniche d'attacco"};
+const ORDER=["PROTOCOL","DIRECTORY","IDENTITY","ACCESS","POLICY","TOPOLOGY","THREAT"];
+const legHost=document.getElementById('legend');
+ORDER.forEach(cl=>{
+  const h=document.createElement('div'); h.className='leg-class'; h.textContent=CLS_LABEL[cl]; legHost.appendChild(h);
+  CARDS.filter(c=>c.cls===cl).forEach(c=>{
+    const info=INFO[c.n]||{r:'(da completare)'};
+    const d=document.createElement('div'); d.className='leg '+c.fac; d.id=slug(c.n);
+    d.innerHTML=`
+      <h3>${c.n} <span class="tag">${c.ty} · ${c.cls}</span></h3>
+      <div class="r">${info.r}</div>
+      ${info.c?`<div class="c"><b>Comandi/strumenti:</b> ${info.c}</div>`:''}
+      ${info.g?`<div class="g"><b>In gioco</b> · ${info.g.replace(/\b([A-Z][A-Z/ ]{2,})\b/g,'<span class="k">$1</span>')}</div>`:''}
+      ${(()=>{const rf=refsFor(c.n,false);return rf.length?`<div class="cmp"><b>Compendio</b>${cmpLinks(rf,'cmp-ln')}</div>`:'';})()}`;
+    legHost.appendChild(d);
+  });
+});
+
+/* ---- ANNOTATE + CHAINED TOOLTIP ---- */
+
+// Sorted term table: longest first to avoid partial matches (e.g. "NTLM Relay" before "NTLM")
+const ANNOT=[
+  ...CARDS.map(c=>({key:c.n,isKw:false})),
+  ...KW.map(k=>({key:k[0],isKw:true}))
+].sort((a,b)=>b.key.length-a.key.length);
+
+// Annotate plain text: wrap recognised card names and keywords with interactive spans
+function annotate(raw,skip){
+  if(!raw) return '';
+  let out='',i=0,n=raw.length;
+  while(i<n){
+    let hit=false;
+    for(const t of ANNOT){
+      if(t.key===skip) continue; // avoid self-reference in same column
+      const tl=t.key.length;
+      if(raw.slice(i,i+tl)!==t.key) continue;
+      const pre=i===0||/[\s([;:,.'"«»—\-\/]/.test(raw[i-1]);
+      const post=i+tl>=n||/[\s);:,.'"«»—\-\/\]]/.test(raw[i+tl]);
+      if(!pre||!post) continue;
+      const esc=t.key.replace(/"/g,'&quot;');
+      out+=t.isKw
+        ?`<span class="tt-kw" data-kw="${esc}">${t.key}</span>`
+        :`<span class="tt-ref" data-term="${esc}">${t.key}</span>`;
+      i+=tl; hit=true; break;
+    }
+    if(!hit){const c=raw[i];out+=c==='<'?'&lt;':c==='>'?'&gt;':c==='&'?'&amp;':c;i++;}
+  }
+  return out;
+}
+
+function buildCol(label,isKw,info,self){
+  const r=annotate(info.r,self);
+  const c=info.c?`<span class="tip-cmd">⌘ ${annotate(info.c,self)}</span>`:'';
+  const g=info.g
+    ?`<div class="tip-sec"><span class="tip-sec-lbl">In gioco</span> · ${annotate(info.g,self)}</div>`:'';
+  const refs=refsFor(self,isKw);
+  const cmp=refs.length?`<div class="tip-cmp"><span class="tip-sec-lbl">Compendio</span> ${cmpLinks(refs,'tip-cmp-ln')}</div>`:'';
+  const more=`<div class="tip-more">${!isKw?'click nome → legenda · ':''}click sul box = fissa / sblocca</div>`;
+  return `<div class="tip-tt">${label}</div>${r}${c}${g}${cmp}${more}`;
+}
+
+// ---- Independent floating overlay windows (each pins / closes on its OWN click) ----
+const tipChain=document.getElementById('tip-chain');
+let wins=[];  // { el, key, isKw, pinned, t }
+
+function clampPos(el,x,y){
+  const w=el.offsetWidth||300, h=el.offsetHeight||160;
+  el.style.left=Math.max(8,Math.min(x, innerWidth-w-8))+'px';
+  el.style.top =Math.max(8,Math.min(y, innerHeight-h-8))+'px';
+}
+function findWin(key,isKw){return wins.find(w=>w.key===key&&w.isKw===isKw);}
+function killWin(w){if(!w)return;clearTimeout(w.t);w.el.remove();wins=wins.filter(x=>x!==w);}
+function softHide(w){clearTimeout(w.t);w.t=setTimeout(()=>{if(!w.pinned)killWin(w);},260);}
+
+function openWin(key,isKw,x,y){
+  const info=isKw?KW_INFO[key]:INFO[key]; if(!info) return null;
+  let w=findWin(key,isKw);
+  if(w){clearTimeout(w.t); return w;}                 // already open → keep this window
+  const el=document.createElement('div');
+  el.className='tip-col'+(isKw?' kw-tip':'');
+  el.innerHTML=buildCol(isKw?`${key} — AD reale`:`${key} — Active Directory`, isKw, info, key);
+  el.style.left='-9999px'; el.style.top='0px';
+  tipChain.appendChild(el);
+  clampPos(el,(x!=null?x+14:80),(y!=null?y+14:80));
+  requestAnimationFrame(()=>el.classList.add('show'));
+  w={el,key,isKw,pinned:false,t:null};
+  wins.push(w);
+  el.addEventListener('mouseenter',()=>clearTimeout(w.t));
+  el.addEventListener('mouseleave',()=>{ if(!w.pinned) softHide(w); });
+  el.addEventListener('click',e=>{
+    if(e.target.closest('a')) return;                 // compendio/legend links navigate normally
+    e.stopPropagation();
+    w.pinned=!w.pinned;
+    el.classList.toggle('pinned',w.pinned);
+    if(!w.pinned) killWin(w); else clearTimeout(w.t);  // un-pin closes only THIS window
+  });
+  // refs inside open their OWN independent window, beside the reference
+  el.querySelectorAll('.tt-ref').forEach(r=>r.addEventListener('mouseenter',()=>{
+    const rc=r.getBoundingClientRect(); openWin(r.dataset.term,false,rc.right-14,rc.top-12);
+  }));
+  el.querySelectorAll('.tt-kw').forEach(r=>r.addEventListener('mouseenter',()=>{
+    const rc=r.getBoundingClientRect(); openWin(r.dataset.kw,true,rc.right-14,rc.top-12);
+  }));
+  return w;
+}
+
+function trigKey(src){
+  if(src.classList.contains('c-title')) return [src.dataset.term,false];
+  if(src.classList.contains('el')) return [src.dataset.term,false];
+  if(src.hasAttribute('data-kw')) return [src.dataset.kw,true];
+  return null;
+}
+document.addEventListener('mouseover',e=>{
+  if(e.target.closest('#tip-chain')) return;          // refs inside windows have their own handlers
+  const src=e.target.closest('.c-title,.el[data-term],[data-kw]'); if(!src) return;
+  const k=trigKey(src); if(!k) return;
+  openWin(k[0],k[1],e.clientX,e.clientY);
+});
+document.addEventListener('mouseout',e=>{
+  const src=e.target.closest('.c-title,.el[data-term],[data-kw]'); if(!src||src.closest('#tip-chain')) return;
+  const dst=e.relatedTarget;
+  if(dst&&dst.closest('#tip-chain')) return;          // moving into a window keeps it
+  const k=trigKey(src); if(!k) return;
+  const w=findWin(k[0],k[1]); if(w&&!w.pinned) softHide(w);
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') wins.slice().forEach(killWin); });
+
+/* ---- SEARCH + AUTOCOMPLETE ---- */
+const searchEl=document.getElementById('search'), acEl=document.getElementById('ac');
+const FAC={d:'def',a:'atk',n:'neu'};
+const SUG=[
+  ...CARDS.map(c=>({label:c.n, kind:'card', fac:c.fac, sub:c.ty+' · '+c.cls, id:slug(c.n)})),
+  ...KW.map(k=>({label:k[0], kind:'kw', fac:FAC[k[1]]||'neu', sub:'Keyword', id:kwid(k[0])}))
+];
+let acItems=[], acSel=-1;
+function buildSug(q){
+  q=q.toLowerCase().trim(); if(!q) return [];
+  const starts=[], has=[];
+  for(const s of SUG){
+    const l=s.label.toLowerCase();
+    if(l.startsWith(q)) starts.push(s); else if(l.includes(q)) has.push(s);
+  }
+  starts.sort((a,b)=>a.label.length-b.label.length);
+  return starts.concat(has).slice(0,8);
+}
+function renderAC(){
+  if(!acItems.length){acEl.classList.remove('open');acEl.innerHTML='';return;}
+  acEl.innerHTML=acItems.map((s,i)=>
+    `<div class="ac-item${i===acSel?' sel':''}" data-i="${i}"><span class="nm">${s.label} <small>${s.kind==='card'?'carta':'keyword'}</small></span><span class="badge ${s.fac}">${s.kind==='card'?s.sub:'keyword'}</span></div>`
+  ).join('');
+  acEl.classList.add('open');
+}
+function jumpTo(s){
+  const node=document.getElementById(s.id); if(!node) return;
+  node.scrollIntoView({behavior:'smooth', block:'center'});
+  node.classList.remove('flash'); void node.offsetWidth; node.classList.add('flash');
+}
+function chooseSug(s){
+  if(!s) return;
+  searchEl.value=s.label; curQ=s.label;
+  acItems=[]; acSel=-1; renderAC(); render(); jumpTo(s);
+}
+searchEl.addEventListener('input',()=>{
+  curQ=searchEl.value.trim(); render();
+  acItems=buildSug(curQ); acSel=-1; renderAC();
+});
+searchEl.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){searchEl.value='';curQ='';acItems=[];acSel=-1;renderAC();render();searchEl.blur();return;}
+  if(!acItems.length) return;
+  if(e.key==='ArrowDown'){e.preventDefault();acSel=(acSel+1)%acItems.length;renderAC();}
+  else if(e.key==='ArrowUp'){e.preventDefault();acSel=(acSel-1+acItems.length)%acItems.length;renderAC();}
+  else if(e.key==='Enter'){e.preventDefault();chooseSug(acItems[acSel>=0?acSel:0]);}
+});
+acEl.addEventListener('mousedown',e=>{
+  const it=e.target.closest('.ac-item'); if(!it) return;
+  e.preventDefault(); chooseSug(acItems[+it.dataset.i]);
+});
+searchEl.addEventListener('blur',()=>setTimeout(()=>acEl.classList.remove('open'),120));
+searchEl.addEventListener('focus',()=>{if(acItems.length)acEl.classList.add('open');});
+
+render();
+</script>
+</body>
+</html>

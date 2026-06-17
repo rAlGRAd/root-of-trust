@@ -1,0 +1,323 @@
+// ROOT OF TRUST — dati di gioco (single source of truth).
+// Modifica QUI per aggiungere/ritoccare carte, keyword e voci di legenda.
+// Caricato da index.html via <script src="data.js"> (niente fetch: si apre offline).
+
+const A=' <span class="ar">→</span> ';
+
+const KW=[
+["LOGON","n","(Ri)costruisce il Token del possessore. Trigger."],
+["TOKEN","n","Insieme di SID = proprietario + ogni MemberOf, fissato al Logon."],
+["MEMBEROF","n","Il SID dell'elemento entra nel Token del possessore."],
+["NEST","n","Un gruppo entra in un altro gruppo. Catena IGDLA."],
+["ACCESSCHECK","n","Confronta i SID del Token con la DACL. Deny precede Allow."],
+["ALLOW / DENY","n","Polarità di una ACE. Deny risolve per primo."],
+["LINK","d","Aggancia una GPO a Site / Domain / OU."],
+["INHERIT","d","L'effetto scende l'albero OU (LSDOU). Enforced batte Block."],
+["FILTER","d","Restringe il bersaglio di una GPO (gruppo o attributo PC)."],
+["DELEGATE","d","Concede diritti su una OU a un'identità."],
+["REPLICATE","n","Copia l'elemento sui DC (di dominio o di foresta). Ha latenza."],
+["AUDIT","d","Quando l'elemento è toccato, aggiunge un segnalino Trace."],
+["TRACE","d","Contatore di rilevamento. A soglia → IR."],
+["NOISE","a","La Tecnica aggiunge Trace (basso / medio / alto)."],
+["RECON","a","Rivela archi coperti adiacenti. Abilita altre Tecniche."],
+["TRAVERSE","a","Sposta il marker TA su un arco se il requisito è soddisfatto."],
+["COMPROMISE","a","Pone controllo TA su un nodo."],
+["ESCALATE","a","Sostituisce il Token con uno a privilegio superiore."],
+["CRACK","a","Converte un TGS / hash catturato in Token."],
+["STEAL","a","Prende il Token / hash da un nodo con Session."],
+["SESSION","a","Un Token attivo risiede sul nodo: è rubabile."],
+["FORGE","a","Crea un ticket / Token senza Logon. Richiede chiave krbtgt o di servizio."],
+["SYNC","a","Estrae i segreti dal DC, inclusa la chiave krbtgt."],
+["PERSIST","a","Sopravvive a Reset / IR."],
+["RESET","d","Invalida Forge e credenziali. La chiave krbtgt richiede ×2."],
+["HARDEN","d","Chiude un arco esistente."],
+["TRANSFER / SEIZE","d","Sposta un ruolo FSMO su un altro DC."],
+["RESTORE / RECYCLE","d","Recupera un Object eliminato; propaga via Replicate."],
+["REDUNDANCY","d","≥2 DC: failover, nessun single point."],
+["TRUST","n","Apre un arco cross-Domain (one-way / two-way, transitive)."]
+];
+
+const CARDS=[
+{n:"KDC",fac:"neu",cost:"S",ty:"Protocollo",cls:"PROTOCOL",rel:"[User]+credenziale"+A+"[TGT]; [TGT]"+A+"[TGS]. Vive su [DC].",kw:["LOGON","TOKEN","FORGE"]},
+{n:"Kerberos Logon",fac:"neu",cost:"S",ty:"Protocollo",cls:"PROTOCOL",rel:"[User]"+A+"[KDC]"+A+"[Access Token].",kw:["LOGON","TOKEN"]},
+{n:"TGT",fac:"neu",cost:"S",ty:"Ticket",cls:"PROTOCOL",rel:"emesso da [KDC]; presentato"+A+"[TGS].",kw:["TOKEN","FORGE"]},
+{n:"TGS",fac:"neu",cost:"S",ty:"Ticket",cls:"PROTOCOL",rel:"per una [Resource]; presentato"+A+"AccessCheck.",kw:["ACCESSCHECK","CRACK"]},
+{n:"NTLM",fac:"neu",cost:"S",ty:"Protocollo (legacy)",cls:"PROTOCOL",rel:"hash"+A+"auth senza [KDC].",kw:["STEAL","CRACK"]},
+{n:"LDAP",fac:"neu",cost:"S",ty:"Protocollo",cls:"PROTOCOL",rel:"interroga la [Directory].",kw:["RECON"]},
+{n:"DNS / SRV",fac:"neu",cost:"S",ty:"Protocollo",cls:"PROTOCOL",rel:"client"+A+"[DC]. Prerequisito del Logon.",kw:["LOGON"]},
+
+{n:"Forest",fac:"def",cost:"2",ty:"Oggetto",cls:"DIRECTORY",rel:"contiene [Tree]/[Domain]; [Schema]+[Configuration] Replicate forest.",kw:["REPLICATE","TRUST"]},
+{n:"Tree",fac:"def",cost:"1",ty:"Oggetto",cls:"DIRECTORY",rel:"[Domain] con DNS contiguo.",kw:["TRUST"]},
+{n:"Domain",fac:"def",cost:"1",ty:"Oggetto",cls:"DIRECTORY",rel:"confine di [Domain NC]; Replicate domain.",kw:["REPLICATE","TRUST"]},
+{n:"Domain Controller",fac:"def",cost:"2",ty:"Oggetto",cls:"DIRECTORY",rel:"detiene [NTDS.DIT]+[SYSVOL]; ospita [KDC].",kw:["REPLICATE","REDUNDANCY","SYNC"]},
+{n:"RODC",fac:"def",cost:"1",ty:"Oggetto",cls:"DIRECTORY",rel:"copia read-only di [DC]; Replicate parziale (PRP).",kw:["REPLICATE"]},
+{n:"NTDS.DIT",fac:"def",cost:"S",ty:"Oggetto",cls:"DIRECTORY",rel:"dentro [DC]; bersaglio di Sync.",kw:["SYNC","RESTORE / RECYCLE"]},
+{n:"SYSVOL",fac:"def",cost:"S",ty:"Oggetto",cls:"DIRECTORY",rel:"dentro [DC]; ospita [GPO]/script; Replicate (DFS-R).",kw:["REPLICATE"]},
+{n:"Schema",fac:"def",cost:"S",ty:"Partizione",cls:"DIRECTORY",rel:"definisce Object/attributi; Replicate forest.",kw:["REPLICATE"]},
+{n:"Configuration",fac:"def",cost:"S",ty:"Partizione",cls:"DIRECTORY",rel:"[Site]/[Site Link]/replica; Replicate forest.",kw:["REPLICATE"]},
+{n:"Domain NC",fac:"def",cost:"S",ty:"Partizione",cls:"DIRECTORY",rel:"[User]/[Group]/[OU]; Replicate domain.",kw:["REPLICATE"]},
+{n:"Global Catalog",fac:"def",cost:"1",ty:"Oggetto",cls:"DIRECTORY",rel:"replica parziale (PAS); ospita [Group · Universal].",kw:["REPLICATE"]},
+{n:"Organizational Unit",fac:"def",cost:"1",ty:"Oggetto",cls:"DIRECTORY",rel:"contiene Identity; accetta Link e Delegate; propaga Inherit.",kw:["LINK","INHERIT","DELEGATE"]},
+{n:"Container",fac:"def",cost:"S",ty:"Oggetto",cls:"DIRECTORY",rel:"contiene Identity; NON accetta Link né Delegate.",kw:["INHERIT"]},
+{n:"Site",fac:"def",cost:"1",ty:"Oggetto",cls:"DIRECTORY",rel:"raggruppa [Subnet]; governa Replicate inter-sito.",kw:["REPLICATE"]},
+{n:"Subnet",fac:"def",cost:"1",ty:"Oggetto",cls:"DIRECTORY",rel:"associa client"+A+"[DC] via [DNS / SRV].",kw:["REPLICATE"]},
+{n:"Site Link",fac:"def",cost:"1",ty:"Oggetto",cls:"DIRECTORY",rel:"connette [Site] con costo/intervallo.",kw:["REPLICATE"]},
+{n:"Trust",fac:"neu",cost:"2",ty:"Power",cls:"DIRECTORY",rel:"arco tra [Domain]/[Forest]; one-way/two-way, transitive.",kw:["TRUST","TRAVERSE"]},
+
+{n:"User",fac:"def",cost:"1",ty:"Oggetto",cls:"IDENTITY",rel:"ha [SID]; MemberOf [Group]; al Logon genera [Access Token].",kw:["MEMBEROF","TOKEN","LOGON"]},
+{n:"Computer",fac:"def",cost:"1",ty:"Oggetto",cls:"IDENTITY",rel:"ha [SID]; join [Domain] (Trust); può avere Session.",kw:["SESSION","MEMBEROF"]},
+{n:"SID",fac:"neu",cost:"S",ty:"Stato",cls:"IDENTITY",rel:"identifica Identity; entra nel Token; matcha [ACE].",kw:["TOKEN","ACCESSCHECK"]},
+{n:"Access Token",fac:"neu",cost:"S",ty:"Stato",cls:"IDENTITY",rel:"= [SID] + ogni MemberOf; confrontato con [DACL].",kw:["TOKEN","LOGON","ACCESSCHECK","STEAL"]},
+{n:"Group · Global",fac:"def",cost:"1",ty:"Oggetto",cls:"IDENTITY",rel:"raccoglie [User] (role); Nest"+A+"[Group · Domain Local].",kw:["MEMBEROF","NEST"]},
+{n:"Group · Domain Local",fac:"def",cost:"1",ty:"Oggetto",cls:"IDENTITY",rel:"riceve [ACE] (rule); accetta Nest.",kw:["NEST","ACCESSCHECK"]},
+{n:"Group · Universal",fac:"def",cost:"1",ty:"Oggetto",cls:"IDENTITY",rel:"multi-dominio; ospitato nel [Global Catalog].",kw:["MEMBEROF","REPLICATE"]},
+{n:"Distribution Group",fac:"def",cost:"S",ty:"Oggetto",cls:"IDENTITY",rel:"solo lista email; senza [SID].",kw:[]},
+{n:"Privileged Group",fac:"def",cost:"S",ty:"Oggetto",cls:"IDENTITY",rel:"MemberOf"+A+"Token alto; bersaglio di Escalate.",kw:["MEMBEROF","ESCALATE"]},
+{n:"Special Identity",fac:"neu",cost:"S",ty:"Stato",cls:"IDENTITY",rel:"[SID] di sistema in ogni Token.",kw:["TOKEN","ACCESSCHECK"]},
+
+{n:"Security Descriptor",fac:"def",cost:"S",ty:"Oggetto",cls:"ACCESS",rel:"avvolge [Resource]; contiene [DACL]+[SACL].",kw:["ACCESSCHECK","AUDIT"]},
+{n:"ACL",fac:"def",cost:"S",ty:"Oggetto",cls:"ACCESS",rel:"lista ordinata di [ACE].",kw:["ACCESSCHECK"]},
+{n:"DACL",fac:"def",cost:"1",ty:"Oggetto",cls:"ACCESS",rel:"[ACE] Allow/Deny; input dell'AccessCheck.",kw:["ACCESSCHECK","ALLOW / DENY"]},
+{n:"SACL",fac:"def",cost:"1",ty:"Oggetto",cls:"ACCESS",rel:"alla risorsa toccata genera Audit"+A+"Trace.",kw:["AUDIT","TRACE"]},
+{n:"ACE · Allow",fac:"def",cost:"S",ty:"Stato",cls:"ACCESS",rel:"[SID]+diritto; concede in AccessCheck.",kw:["ALLOW / DENY","ACCESSCHECK"]},
+{n:"ACE · Deny",fac:"def",cost:"S",ty:"Stato",cls:"ACCESS",rel:"[SID]+diritto; risolve prima di Allow.",kw:["ALLOW / DENY","ACCESSCHECK"]},
+{n:"Resource / Share",fac:"def",cost:"1",ty:"Oggetto",cls:"ACCESS",rel:"protetta da [Security Descriptor]; bersaglio di AccessCheck.",kw:["ACCESSCHECK"]},
+
+{n:"GPO",fac:"def",cost:"1",ty:"Power",cls:"POLICY",rel:"Link a SDOU; propaga Inherit; accetta Filter.",kw:["LINK","INHERIT","FILTER","HARDEN"]},
+{n:"GPO Link",fac:"def",cost:"1",ty:"Operazione",cls:"POLICY",rel:"aggancia [GPO]"+A+"[Site]/[Domain]/[OU].",kw:["LINK","INHERIT"]},
+{n:"Inheritance",fac:"def",cost:"S",ty:"Stato",cls:"POLICY",rel:"altera Inherit; Enforced batte Block.",kw:["INHERIT"]},
+{n:"Security Filtering",fac:"def",cost:"1",ty:"Operazione",cls:"POLICY",rel:"limita [GPO] a un [Group · Global].",kw:["FILTER"]},
+{n:"WMI Filtering",fac:"def",cost:"1",ty:"Operazione",cls:"POLICY",rel:"limita [GPO] per attributo del [Computer].",kw:["FILTER"]},
+{n:"Loopback Processing",fac:"def",cost:"S",ty:"Stato",cls:"POLICY",rel:"applica user-policy del [Computer] (Merge/Replace).",kw:["INHERIT"]},
+{n:"PSO",fac:"def",cost:"1",ty:"Power",cls:"POLICY",rel:"password granulare"+A+"[Group]/[User].",kw:["FILTER","HARDEN"]},
+{n:"RSoP",fac:"def",cost:"1",ty:"Operazione",cls:"POLICY",rel:"calcola l'effetto netto delle [GPO] (gpresult).",kw:["INHERIT"]},
+{n:"Default Domain Policy",fac:"def",cost:"S",ty:"Power",cls:"POLICY",rel:"password/lockout/Kerberos"+A+"[Domain].",kw:["INHERIT","HARDEN"]},
+{n:"Default DC Policy",fac:"def",cost:"S",ty:"Power",cls:"POLICY",rel:"Audit"+A+"[Domain Controller].",kw:["AUDIT"]},
+{n:"GPSI",fac:"def",cost:"1",ty:"Operazione",cls:"POLICY",rel:"distribuisce .msi via [GPO].",kw:["LINK"]},
+{n:"CSE",fac:"def",cost:"S",ty:"Stato",cls:"POLICY",rel:"applica [GPO] lato [Computer] (pull).",kw:["INHERIT"]},
+
+{n:"FSMO · Schema Master",fac:"def",cost:"S",ty:"Ruolo",cls:"TOPOLOGY",rel:"single-master di [Forest]; Transfer/Seize.",kw:["TRANSFER / SEIZE","REPLICATE"]},
+{n:"FSMO · Domain Naming",fac:"def",cost:"S",ty:"Ruolo",cls:"TOPOLOGY",rel:"single-master di [Forest]; Transfer/Seize.",kw:["TRANSFER / SEIZE"]},
+{n:"FSMO · RID Master",fac:"def",cost:"S",ty:"Ruolo",cls:"TOPOLOGY",rel:"distribuisce RID"+A+"[SID]; Transfer/Seize.",kw:["TRANSFER / SEIZE"]},
+{n:"FSMO · Infrastructure",fac:"def",cost:"S",ty:"Ruolo",cls:"TOPOLOGY",rel:"single-master di [Domain]; Transfer/Seize.",kw:["TRANSFER / SEIZE"]},
+{n:"FSMO · PDC Emulator",fac:"def",cost:"S",ty:"Ruolo",cls:"TOPOLOGY",rel:"tempo/lockout/Kerberos; nodo critico; Transfer/Seize.",kw:["TRANSFER / SEIZE","REDUNDANCY"]},
+{n:"KCC",fac:"def",cost:"S",ty:"Operazione",cls:"TOPOLOGY",rel:"disegna Replicate intra-sito.",kw:["REPLICATE"]},
+{n:"ISTG / Bridgehead",fac:"def",cost:"S",ty:"Operazione",cls:"TOPOLOGY",rel:"governa Replicate inter-[Site].",kw:["REPLICATE"]},
+{n:"Replication (DFS-R)",fac:"def",cost:"1",ty:"Operazione",cls:"TOPOLOGY",rel:"propaga [SYSVOL]/NC tra [DC].",kw:["REPLICATE"]},
+{n:"FRS (legacy)",fac:"def",cost:"S",ty:"Stato",cls:"TOPOLOGY",rel:"Replicate vecchio; migrazione irreversibile"+A+"DFS-R.",kw:["REPLICATE"]},
+{n:"Functional Level",fac:"def",cost:"1",ty:"Stato",cls:"TOPOLOGY",rel:"abilita funzioni; irreversibile; vincola OS dei [DC].",kw:[]},
+{n:"Backup (wbadmin)",fac:"def",cost:"1",ty:"Operazione",cls:"TOPOLOGY",rel:"salva lo stato della [Directory]; abilita Restore.",kw:["RESTORE / RECYCLE"]},
+{n:"Authoritative Restore",fac:"def",cost:"2",ty:"Operazione",cls:"TOPOLOGY",rel:"ripristina e impone via Replicate.",kw:["RESTORE / RECYCLE","REPLICATE"]},
+{n:"Non-auth Restore",fac:"def",cost:"1",ty:"Operazione",cls:"TOPOLOGY",rel:"ripristina e riceve Replicate.",kw:["RESTORE / RECYCLE","REPLICATE"]},
+{n:"Recycle Bin",fac:"def",cost:"1",ty:"Operazione",cls:"TOPOLOGY",rel:"recupera un Object eliminato.",kw:["RESTORE / RECYCLE"]},
+{n:"Transfer / Seize FSMO",fac:"def",cost:"1",ty:"Operazione",cls:"TOPOLOGY",rel:"sposta un [Ruolo FSMO] su altro [DC].",kw:["TRANSFER / SEIZE"]},
+{n:"Reset krbtgt ×2",fac:"def",cost:"2",ty:"Operazione",cls:"TOPOLOGY",rel:"invalida ogni Forge (Golden Ticket).",kw:["RESET","HARDEN"]},
+{n:"Incident Response",fac:"def",cost:"1",ty:"Operazione",cls:"TOPOLOGY",rel:"Trace a soglia"+A+"contieni/eradica; abilita Harden e Reset.",kw:["TRACE","HARDEN","RESET"]},
+
+{n:"BloodHound",fac:"atk",cost:"1",ty:"Tecnica · Recon",cls:"THREAT",rel:"rivela archi MemberOf/AdminTo/GenericAll dal foothold.",kw:["RECON","NOISE"]},
+{n:"LDAP Enum",fac:"atk",cost:"1",ty:"Tecnica · Recon",cls:"THREAT",rel:"rivela la [Directory] via [LDAP].",kw:["RECON","NOISE"]},
+{n:"Kerberoasting",fac:"atk",cost:"2",ty:"Tecnica · Cred",cls:"THREAT",rel:"[TGS] di service account"+A+"Crack"+A+"[Access Token].",kw:["CRACK","NOISE"]},
+{n:"AS-REP Roast",fac:"atk",cost:"2",ty:"Tecnica · Cred",cls:"THREAT",rel:"account senza preauth"+A+"Crack.",kw:["CRACK","NOISE"]},
+{n:"NTLM Relay",fac:"atk",cost:"2",ty:"Tecnica · Cred",cls:"THREAT",rel:"cattura [NTLM]"+A+"auth altrove.",kw:["STEAL","NOISE"]},
+{n:"Pass-the-Hash",fac:"atk",cost:"2",ty:"Tecnica · Move",cls:"THREAT",rel:"hash [NTLM]"+A+"Token senza password.",kw:["STEAL","TOKEN"]},
+{n:"Pass-the-Ticket",fac:"atk",cost:"2",ty:"Tecnica · Move",cls:"THREAT",rel:"[TGT]/[TGS] rubato"+A+"Token.",kw:["STEAL","TOKEN"]},
+{n:"Abuse GenericAll",fac:"atk",cost:"2",ty:"Tecnica · Esc",cls:"THREAT",rel:"WriteDACL su [Resource]/[Group]"+A+"Allow self.",kw:["ESCALATE","ACCESSCHECK"]},
+{n:"AddMember Abuse",fac:"atk",cost:"1",ty:"Tecnica · Esc",cls:"THREAT",rel:"self"+A+"[Group]; poi Logon per il Token.",kw:["MEMBEROF","LOGON","ESCALATE"]},
+{n:"Token Theft",fac:"atk",cost:"2",ty:"Tecnica · Move",cls:"THREAT",rel:"nodo con Session"+A+"Steal Token.",kw:["STEAL","SESSION"]},
+{n:"DCSync",fac:"atk",cost:"3",ty:"Tecnica · Dominance",cls:"THREAT",rel:"diritti di replica"+A+"Sync krbtgt da [DC].",kw:["SYNC","NOISE"]},
+{n:"Golden Ticket",fac:"atk",cost:"2",ty:"Tecnica · Persist",cls:"THREAT",rel:"chiave krbtgt"+A+"Forge [TGT] arbitrario.",kw:["FORGE","PERSIST","RESET"]},
+{n:"Silver Ticket",fac:"atk",cost:"1",ty:"Tecnica · Persist",cls:"THREAT",rel:"chiave di servizio"+A+"Forge [TGS].",kw:["FORGE"]},
+{n:"SID History Inject",fac:"atk",cost:"2",ty:"Tecnica · Persist",cls:"THREAT",rel:"inietta [SID] privilegiato nel Token.",kw:["TOKEN","PERSIST"]},
+{n:"Malicious GPO",fac:"atk",cost:"2",ty:"Tecnica · Esc",cls:"THREAT",rel:"WriteDACL su [GPO]"+A+"Link malevolo all'[OU].",kw:["LINK","ESCALATE"]},
+{n:"AdminSDHolder",fac:"atk",cost:"2",ty:"Tecnica · Persist",cls:"THREAT",rel:"persistenza sui [Privileged Group].",kw:["PERSIST"]}
+];
+
+const INFO={
+"KDC":{r:"Servizio Kerberos ospitato su ogni DC. Autentica l'utente (verifica chi è) e rilascia i ticket: dalla prova d'identità emette un TGT; presentando il TGT, emette un TGS per il servizio richiesto.",g:"La carta usa LOGON e TOKEN; è anche il bersaglio implicito di FORGE."},
+"Kerberos Logon":{r:"Autenticazione di rete: l'utente prova l'identità (password→hash) al KDC, ottiene il TGT, e il sistema costruisce l'Access Token con SID utente + SID dei gruppi. L'autorizzazione avviene dopo, confrontando il token con la ACL.",g:"È il trigger LOGON che produce il TOKEN."},
+"TGT":{r:"Ticket Granting Ticket: rilasciato dal KDC dopo l'autenticazione iniziale. Certifica «sei autenticato» e serve a chiedere i TGS senza reinserire la password.",g:"Bersaglio di FORGE nel Golden Ticket."},
+"TGS":{r:"Ticket Granting Service: rilasciato dal KDC presentando il TGT; valido per UN servizio/risorsa specifico, a cui viene presentato per l'accesso.",g:"Input di ACCESSCHECK; oggetto di CRACK nel Kerberoasting."},
+"NTLM":{r:"Protocollo di autenticazione challenge-response legacy, basato sull'hash della password. Usato quando Kerberos/DNS non sono disponibili. Più debole: l'hash è riutilizzabile.",g:"Materia prima di STEAL/CRACK (Pass-the-Hash, NTLM Relay)."},
+"LDAP":{r:"Lightweight Directory Access Protocol: interroga e gestisce la directory (utenti, gruppi, attributi). AD espone i suoi oggetti via LDAP; le query usano il DN. È il protocollo che autentica e autorizza l'accesso granulare.",g:"Abilita RECON lato attaccante."},
+"DNS / SRV":{r:"Il client trova il DC tramite i record SRV che i DC registrano automaticamente in DNS. Il client deve puntare all'IP del DC: senza DNS, quasi tutte le richieste falliscono e il logon al dominio non avviene.",g:"Prerequisito del LOGON."},
+
+"Forest":{r:"Confine massimo di sicurezza e replica. Insieme di uno o più alberi; le partizioni Schema e Configuration sono comuni e replicate a tutti i DC della foresta. Il primo dominio è il Forest Root Domain.",g:"REPLICATE a livello foresta; definisce i confini per TRUST."},
+"Tree":{r:"Uno o più domini con namespace DNS contiguo, in una singola istanza di AD DS.",g:"Collegato da TRUST automatici intra-forest."},
+"Domain":{r:"Unità amministrativa base e confine di policy e replica del Domain NC. Racchiude utenti, computer, gruppi e OU; crea un confine di sicurezza per le risorse.",g:"REPLICATE a livello dominio; estremità degli archi TRUST."},
+"Domain Controller":{r:"Server con ruolo AD DS. Detiene il database NTDS.DIT e la cartella SYSVOL, ospita il servizio Kerberos (KDC) e gli altri servizi AD. Best practice: almeno due per dominio per alta disponibilità.",c:"Install-ADDSDomainController · (storico: dcpromo)",g:"REDUNDANCY con ≥2 DC; bersaglio finale di SYNC."},
+"RODC":{r:"Read-Only Domain Controller: copia in sola lettura del database, per sedi periferiche insicure senza personale IT esperto. Replica le password solo secondo la Password Replication Policy (PRP).",g:"REPLICATE parziale."},
+"NTDS.DIT":{r:"File %systemroot%\\NTDS\\ntds.dit: database principale di AD, contiene credenziali utente, criteri di gruppo, impostazioni di sicurezza e configurazioni di dominio.",g:"Bersaglio di SYNC; recuperabile con RESTORE."},
+"SYSVOL":{r:"Cartella %systemroot%\\SYSVOL: volume condiviso con script di logon e policy. Replicato tra i DC.",c:"Replica: DFS-R (sostituisce FRS)",g:"REPLICATE tra DC."},
+"Schema":{r:"Partizione che definisce regole, struttura e vincoli del database: quali oggetti e attributi possono esistere. Replicata su tutti i DC della foresta.",c:"Snap-in: Active Directory Schema",g:"REPLICATE forest."},
+"Configuration":{r:"Partizione che memorizza la configurazione dell'intera foresta: siti, replica e altri componenti dei servizi di directory. Replicata su tutti i DC della foresta.",g:"REPLICATE forest."},
+"Domain NC":{r:"Domain Naming Context: partizione con tutti gli oggetti specifici del dominio (utenti, gruppi, OU, risorse). Replicata su tutti i DC del dominio.",g:"REPLICATE domain."},
+"Global Catalog":{r:"DC speciale che contiene una replica parziale in sola lettura (PAS) di tutti gli oggetti della foresta, per velocizzare le ricerche cross-dominio. Ospita i gruppi Universal.",g:"REPLICATE parziale di foresta."},
+"Organizational Unit":{r:"Contenitore che supporta l'applicazione delle GPO e la delega amministrativa. Vi si spostano gli oggetti dai container di default per poterli gestire.",c:"Snap-in: ADUC",g:"Accetta LINK, INHERIT e DELEGATE."},
+"Container":{r:"Contenitore predefinito (es. «Computers», «Users») che NON supporta Group Policy né delega amministrativa. Spostare sempre gli oggetti nelle OU.",g:"Nodo «scoperto»: non accetta LINK/DELEGATE."},
+"Site":{r:"Costrutto logico che rappresenta la struttura fisica della rete: un gruppo di subnet IP collegate da connessioni veloci e affidabili (LAN).",c:"Snap-in: Active Directory Sites and Services",g:"Governa REPLICATE inter-sito."},
+"Subnet":{r:"Subnet IP in notazione CIDR (es. 192.168.0.0/24) associata a un sito, per indicare ai client a quale DC connettersi.",g:"Indirizza il client al DC locale (REPLICATE)."},
+"Site Link":{r:"Collegamento tra due siti per la replica, con costo e intervallo definiti (es. ogni 15 minuti).",g:"Definisce il percorso e la latenza di REPLICATE."},
+"Trust":{r:"Relazione di fiducia tra domini/foreste che permette autenticazione (logon) e autorizzazione (accesso a risorse) cross-boundary. Intra-forest: automatiche, transitive, bidirezionali. Inter-forest: manuali, con DNS risolvibili e account amministrativi su entrambi. One-way o two-way.",c:"Snap-in: Active Directory Domains and Trusts",g:"Apre l'arco TRUST/TRAVERSE cross-dominio."},
+
+"User":{r:"Account utente: security principal (entità di sicurezza) con SID, salvato nell'identity store. Al logon genera l'Access Token. Identificato da UPN (m.rossi@ifts.local) e SAMAccountName (IFTS\\m.rossi).",g:"MEMBEROF dei gruppi; al LOGON produce il TOKEN."},
+"Computer":{r:"Account computer: entità di sicurezza con SID. Aggiunto al dominio stabilisce una relazione di trust con AD ed è gestito centralmente (a differenza del workgroup, con SAM locale).",g:"Può avere SESSION (token rubabili); MEMBEROF."},
+"SID":{r:"Security Identifier: valore univoco e immutabile che identifica un'entità di sicurezza (utente/gruppo/computer). Entra nell'Access Token ed è confrontato con le ACE.",g:"Componente del TOKEN; chiave dell'ACCESSCHECK."},
+"Access Token":{r:"Rilasciato al client al momento del logon. Contiene il SID dell'utente e i SID dei gruppi di cui è membro; viene confrontato con la ACL della risorsa per l'autorizzazione. Aggiornare la membership richiede un nuovo logon per rigenerarlo.",g:"Prodotto dal LOGON; input dell'ACCESSCHECK; bersaglio di STEAL/FORGE."},
+"Group · Global":{r:"Gruppo di sicurezza con scope Global: «role group» che raccoglie utenti dello stesso dominio per ruolo aziendale. Va annidato nei Domain Local (strategia IGDLA).",g:"MEMBEROF degli utenti; NEST verso Domain Local."},
+"Group · Domain Local":{r:"Gruppo di sicurezza con scope Domain Local: «rule group» che riceve i permessi (ACE) sulle risorse; può contenere membri da qualsiasi dominio della foresta.",g:"Riceve la ACE finale; accetta NEST (la «A» di IGDLA)."},
+"Group · Universal":{r:"Gruppo di sicurezza con scope Universal, per foreste multi-dominio; ospitato e replicato nel Global Catalog.",g:"MEMBEROF cross-dominio; REPLICATE nel GC."},
+"Distribution Group":{r:"Gruppo di sola distribuzione, usato per le liste email. NON ha un SID e quindi non concede permessi.",g:"Nessun effetto sul TOKEN: assegnargli permessi è inutile."},
+"Privileged Group":{r:"Gruppi amministrativi predefiniti: Domain Admins, Enterprise Admins, Schema Admins. L'appartenenza conferisce privilegi elevati su dominio/foresta/schema.",g:"MEMBEROF → token alto; bersaglio di ESCALATE."},
+"Special Identity":{r:"Identità fornite dal sistema (es. Authenticated Users, Everyone). Appartenenza dinamica gestita dal sistema, non assegnata manualmente.",g:"SID di sistema sempre presente nel TOKEN."},
+
+"Security Descriptor":{r:"Struttura che contiene le informazioni di sicurezza associate a un oggetto/risorsa: include la DACL (accessi) e la SACL (audit).",g:"Avvolge la Resource; fornisce ACCESSCHECK e AUDIT."},
+"ACL":{r:"Access Control List: elenco ordinato di ACE che definisce le protezioni di un oggetto. Termine generico; può essere DACL o SACL.",g:"Contenitore di ACE per l'ACCESSCHECK."},
+"DACL":{r:"Discretionary ACL: identifica utenti e gruppi a cui è consentito o negato l'accesso, tramite un elenco di ACE. È ciò che viene confrontato con l'Access Token. Le voci Deny prevalgono sulle Allow.",g:"Input diretto dell'ACCESSCHECK (ALLOW/DENY)."},
+"SACL":{r:"System ACL: definisce quali accessi a un oggetto proteggibile vengono monitorati e registrati (auditing). Non concede nulla: osserva.",g:"Genera AUDIT → alimenta il contatore TRACE."},
+"ACE · Allow":{r:"Access Control Entry di tipo Allow: in una ACL identifica un'entità di sicurezza (SID) e i diritti di accesso consentiti.",g:"Concede in ACCESSCHECK se il SID è nel token."},
+"ACE · Deny":{r:"Access Control Entry di tipo Deny: nega un diritto a un SID. Valutata prima delle Allow.",g:"Risolve per prima nell'ACCESSCHECK (DENY vince)."},
+"Resource / Share":{r:"Oggetto protetto (es. cartella condivisa) con un security descriptor; l'accesso è regolato dai permessi (NTFS) confrontati con l'Access Token.",g:"Bersaglio dell'ACCESSCHECK."},
+
+"GPO":{r:"Group Policy Object: insieme di impostazioni per User o Computer (Software, Windows Settings, Administrative Templates). Collegabile a Site/Domain/OU; le GPO di dominio sono memorizzate sui DC.",c:"GPM (Group Policy Management) · gpedit.msc (locali)",g:"LINK a SDOU; propaga INHERIT; accetta FILTER e HARDEN."},
+"GPO Link":{r:"Il collegamento che aggancia una GPO a un Site/Domain/OU (SDOU); definisce lo scope massimo. Un link può essere disabilitato senza cancellare la GPO, e cancellato senza eliminarla.",g:"Esegue LINK e abilita INHERIT."},
+"Inheritance":{r:"Le GPO si applicano in ordine LSDOU (Local, Site, Domain, OU) ed ereditano lungo l'albero; in conflitto vince l'ultima applicata (l'OU). Block Inheritance blocca l'eredità, Enforced la forza e batte Block.",g:"Modifica la catena INHERIT."},
+"Security Filtering":{r:"Affina il bersaglio di una GPO autorizzando/negando l'applicazione ai membri di uno specifico security group (Global), entro lo scope del link.",g:"Esegue FILTER per gruppo."},
+"WMI Filtering":{r:"Affina il bersaglio di una GPO in base a query WMI sulle caratteristiche del client (RAM, versione OS…), entro lo scope del link.",g:"Esegue FILTER per attributo."},
+"Loopback Processing":{r:"Applica agli utenti le impostazioni della GPO collegata al computer su cui accedono (modalità Merge o Replace). Tipico per kiosk, sale riunioni, terminal server.",g:"Variante di INHERIT lato computer."},
+"PSO":{r:"Password Settings Object: policy password granulare applicata a gruppi o utenti specifici, oltre alla Default Domain Policy.",c:"ADAC → System → Password Settings Container",g:"FILTER mirato + HARDEN sulle credenziali."},
+"RSoP":{r:"Resultant Set of Policy: l'effetto netto cumulativo di tutte le GPO su un utente/computer, con il calcolo delle precedenze in caso di conflitto.",c:"gpresult · rsop.msc",g:"Risolve la catena INHERIT (calcolo precedenza)."},
+"Default Domain Policy":{r:"GPO predefinita in ogni dominio: definisce le policy degli account AD — password, account lockout e policy di Kerberos.",g:"INHERIT a livello dominio + HARDEN."},
+"Default DC Policy":{r:"GPO predefinita: definisce le policy di auditing per i domain controller e per Active Directory.",g:"Imposta AUDIT sui DC."},
+"GPSI":{r:"Group Policy Software Installation: distribuzione massiva di pacchetti .msi tramite GPO.",g:"Variante di LINK (deploy software)."},
+"CSE":{r:"Client-Side Extensions: componenti software sul client che applicano le impostazioni GPO ricevute dal DC. L'applicazione è gestita dal client («pull»); refresh ogni 90–120 minuti.",c:"gpupdate (per forzare)",g:"Esegue INHERIT lato client."},
+
+"FSMO · Schema Master":{r:"Ruolo FSMO forest-wide: unico DC che può effettuare modifiche allo schema. Per default sul Forest Root DC.",c:"Snap-in: Active Directory Schema · netdom query fsmo",g:"TRANSFER/SEIZE; dopo un seize il vecchio DC va decommissionato."},
+"FSMO · Domain Naming":{r:"Ruolo FSMO forest-wide: aggiunge e rimuove domini dalla/alla foresta.",c:"Snap-in: Active Directory Domains and Trusts",g:"TRANSFER/SEIZE; dopo un seize il vecchio DC va decommissionato."},
+"FSMO · RID Master":{r:"Ruolo FSMO domain-wide: fornisce «pool» di RID ai DC, poi usati per comporre i SID dei nuovi oggetti creati.",c:"Snap-in: Active Directory Users and Computers",g:"TRANSFER/SEIZE; dopo un seize il vecchio DC va decommissionato."},
+"FSMO · Infrastructure":{r:"Ruolo FSMO domain-wide: mantiene aggiornate le membership dei gruppi quando vi sono membri di altri domini, chiedendo gli aggiornamenti al GC. Va su un DC non-GC, a meno che tutti i DC siano GC (allora il ruolo è superfluo).",g:"TRANSFER/SEIZE (rimettibile online dopo seize)."},
+"FSMO · PDC Emulator":{r:"Ruolo FSMO domain-wide con più funzioni: emula il PDC (compatibilità), è il riferimento password (primo a conoscere le modifiche), la sorgente oraria del dominio e il target predefinito delle modifiche alle GPO.",g:"Nodo critico (REDUNDANCY); TRANSFER/SEIZE (rimettibile online dopo seize)."},
+"KCC":{r:"Knowledge Consistency Checker: processo automatico che disegna la topologia di replica più efficiente tra i DC dello stesso sito.",g:"Ottimizza REPLICATE intra-sito."},
+"ISTG / Bridgehead":{r:"Intersite Topology Generator: ruolo automatico che genera le connessioni di replica tra siti diversi, tramite i Bridgehead server.",g:"Ottimizza REPLICATE inter-sito."},
+"Replication (DFS-R)":{r:"Replica multimaster delle partizioni e di SYSVOL tra DC. DFS-R è la modalità moderna che sostituisce FRS; la migrazione FRS→DFS-R è irreversibile.",g:"Esegue REPLICATE; con latenza dipendente dai Site Link."},
+"FRS (legacy)":{r:"File Replication Service: meccanismo di replica di SYSVOL legacy. Se presente, va migrato a DFS-R; la migrazione è irreversibile.",g:"Vecchia forma di REPLICATE."},
+"Functional Level":{r:"Definisce le funzionalità disponibili e la versione minima dei DC. Il livello di dominio può essere ≥ del livello di foresta ma non inferiore. Non va aumentato se esistono DC di versione precedente; l'aumento è irreversibile.",c:"AD Domains and Trusts (foresta) · ADUC (dominio)",g:"Gate: abilita/blocca funzioni; scelta irreversibile."},
+"Backup (wbadmin)":{r:"Backup dello stato di sistema/AD per la business continuity.",c:"Windows Server Backup (wizard) · wbadmin.exe (script)",g:"Abilita RESTORE."},
+"Authoritative Restore":{r:"Ripristina oggetti da backup marcandoli come «autorevoli» (versione incrementata), così la replica li ripropaga sugli altri DC sovrascrivendone le copie. Si usa per recuperare oggetti cancellati.",c:"ntdsutil (authoritative restore)",g:"RESTORE che impone via REPLICATE."},
+"Non-auth Restore":{r:"Ripristina il DC da backup; al riavvio il DC riceve via replica le modifiche più recenti dagli altri DC, tornando allineato. È il ripristino «normale» di un DC.",g:"RESTORE che riceve REPLICATE."},
+"Recycle Bin":{r:"Active Directory Recycle Bin: una volta abilitata, consente di ripristinare oggetti eliminati (con tutti gli attributi) dall'interfaccia «Deleted Objects».",c:"ADAC → abilitare Recycle Bin → Deleted Objects",g:"RECYCLE di un oggetto eliminato."},
+"Transfer / Seize FSMO":{r:"Spostamento dei ruoli FSMO. Transfer (DC online): per bilanciare, prima di manutenzione o demote. Seize (DC irraggiungibile): forzatura d'emergenza. Dopo seize di Schema/RID/Domain Naming il vecchio DC va decommissionato; PDC e Infrastructure possono tornare online.",c:"Move-ADDirectoryServerOperationMasterRole -Identity DC01 -OperationMasterRole … · ntdsutil → seize",g:"Esegue TRANSFER/SEIZE."},
+"Reset krbtgt ×2":{r:"Reset della password dell'account di servizio krbtgt, da eseguire due volte (per via del versioning della chiave e della finestra di replica), così da invalidare i Golden Ticket esistenti.",g:"RESET che annulla ogni FORGE; passo chiave dell'IR."},
+"Incident Response":{r:"Ciclo di gestione dell'incidente: rilevamento → contenimento → eradicazione → recupero.",g:"Innescato dalla soglia TRACE; abilita HARDEN e RESET."},
+
+"BloodHound":{r:"[Tecnica d'attacco] Strumento di enumerazione che raccoglie via LDAP le relazioni AD (membership, sessioni, diritti su oggetti) e calcola i percorsi più brevi verso Domain Admin. Difesa: monitorare le query LDAP, ridurre archi e sessioni privilegiate.",g:"RECON: rivela gli archi adiacenti."},
+"LDAP Enum":{r:"[Tecnica d'attacco] Enumerazione della directory via query LDAP: utenti, gruppi, SPN, attributi. Difesa: limitare le letture anonime e monitorare le query.",g:"RECON sulla Directory."},
+"Kerberoasting":{r:"[Tecnica d'attacco] Si richiede un TGS per un account di servizio (con SPN); il ticket è cifrato con l'hash della password del servizio e si cracca offline. Difesa: password lunghe o gMSA (Managed Service Account).",g:"CRACK: TGS → Token."},
+"AS-REP Roast":{r:"[Tecnica d'attacco] Per account con pre-autenticazione Kerberos disabilitata, si ottiene materiale cifrato craccabile offline. Difesa: abilitare la pre-autenticazione.",g:"CRACK senza preauth."},
+"NTLM Relay":{r:"[Tecnica d'attacco] Si intercetta un'autenticazione NTLM e la si inoltra a un altro servizio impersonando la vittima. Difesa: SMB signing, channel binding, dismissione di NTLM.",g:"STEAL: cattura e inoltro."},
+"Pass-the-Hash":{r:"[Tecnica d'attacco] Si usa l'hash NTLM rubato per autenticarsi senza conoscere la password in chiaro. Difesa: tiering amministrativo, LAPS, Credential Guard.",g:"STEAL → TOKEN senza password."},
+"Pass-the-Ticket":{r:"[Tecnica d'attacco] Si riusa un TGT/TGS rubato dalla memoria di una macchina. Difesa: igiene delle credenziali, riavvii, protezione LSASS.",g:"STEAL → TOKEN da ticket."},
+"Abuse GenericAll":{r:"[Tecnica d'attacco] Con il diritto GenericAll/WriteDACL su un oggetto si riscrive la sua ACL per concedersi accesso o si resetta la password della vittima. Difesa: hardening e revisione delle ACL.",g:"ESCALATE riscrivendo la DACL (ACCESSCHECK)."},
+"AddMember Abuse":{r:"[Tecnica d'attacco] Con diritto di scrittura su un gruppo, l'attaccante vi si aggiunge come membro; serve un nuovo logon per ottenere i SID nel token. Difesa: limitare i diritti di scrittura sui gruppi privilegiati.",g:"MEMBEROF + LOGON → ESCALATE."},
+"Token Theft":{r:"[Tecnica d'attacco] Su una macchina compromessa con la sessione attiva di un admin, si rubano token/credenziali dalla memoria (es. Mimikatz). Difesa: non usare Domain Admin sulle workstation (tiering).",g:"STEAL da un nodo con SESSION."},
+"DCSync":{r:"[Tecnica d'attacco] Si abusa del diritto di replica («Replicating Directory Changes») per chiedere al DC le credenziali, incluso l'hash di krbtgt, senza eseguire codice sul DC. Difesa: restringere i diritti di replica ai soli DC.",g:"SYNC: estrae krbtgt dal DC."},
+"Golden Ticket":{r:"[Tecnica d'attacco] Con l'hash di krbtgt si forgia un TGT arbitrario (qualsiasi utente e gruppi), valido a lungo e indipendente dal KDC. Difesa: reset di krbtgt due volte.",g:"FORGE del TGT; PERSIST finché non c'è RESET."},
+"Silver Ticket":{r:"[Tecnica d'attacco] Con l'hash di un account di servizio si forgia un TGS per quel servizio, bypassando il KDC. Difesa: password di servizio forti, monitoraggio degli accessi.",g:"FORGE del TGS."},
+"SID History Inject":{r:"[Tecnica d'attacco] Si inserisce un SID privilegiato nell'attributo SID History di un account per ereditarne i diritti nel token. Difesa: SID filtering sui trust.",g:"Inietta un SID nel TOKEN; PERSIST."},
+"Malicious GPO":{r:"[Tecnica d'attacco] Con WriteDACL su una GPO collegata (es. all'OU dei DC) si inseriscono impostazioni malevole applicate a tutti gli oggetti nello scope. Difesa: delega rigorosa e auditing delle GPO.",g:"LINK malevolo → ESCALATE."},
+"AdminSDHolder":{r:"[Tecnica d'attacco] Oggetto che, tramite il processo SDProp, reimposta periodicamente le ACL dei gruppi protetti; abusato per ristabilire accessi nascosti (persistenza). Difesa: monitorare AdminSDHolder e i gruppi protetti.",g:"PERSIST sui Privileged Group."}
+};
+
+// KW_INFO — significato reale (fuori dal gioco) di ogni parola-chiave meccanica.
+// Fonte: MOD 3.3 (AD DS — BERNABEI) + documentazione Microsoft.
+// Struttura: { "NOME_KW": { r, c? } }
+//   r = spiegazione AD/Windows reale (cosa succede davvero nel sistema)
+//   c = comandi/strumenti opzionali
+const KW_INFO={
+"LOGON":{r:"Il logon è il processo con cui la LSA (Local Security Authority) verifica le credenziali dell'utente tramite Kerberos o NTLM, poi costruisce l'Access Token: un oggetto kernel che contiene il SID dell'utente, i SID di tutti i gruppi di cui è membro e i privilegi assegnati. Ogni processo avviato dall'utente eredita una copia del token. Per aggiornare la membership dei gruppi è necessario un nuovo logon.",c:"Event ID 4624 (logon riuscito) · 4625 (logon fallito)"},
+"TOKEN":{r:"L'Access Token è un oggetto del kernel Windows creato al momento del logon. Contiene: SID utente, SID dei gruppi (incluse le Special Identity di sistema), privilegi e livello di integrità. Il kernel lo confronta con la DACL della risorsa ad ogni AccessCheck. Non si aggiorna automaticamente: se la membership di un gruppo cambia, il token resta invariato finché l'utente non esegue un nuovo logon.",c:"whoami /all — mostra token corrente"},
+"MEMBEROF":{r:"In AD, l'attributo memberOf è il back-link dell'attributo member nei gruppi. Quando un account è aggiunto a un gruppo, il SID di quel gruppo viene incluso nell'Access Token al successivo logon. I gruppi annidati (NEST) propagano i SID transitivamente: essere membro di un gruppo che è membro di un Domain Local fa sì che tutti i SID della catena entrino nel token.",c:"Get-ADUser -Identity utente -Properties MemberOf"},
+"NEST":{r:"L'annidamento dei gruppi permette a un gruppo di essere membro di un altro gruppo. La strategia raccomandata è IGDLA: gli utenti (I) entrano nei gruppi Global (G), i Global si annidano nei Domain Local (DL), i Domain Local ricevono le ACE (A) sulle risorse. Questo separa il «chi sei» (Global = role) dal «cosa puoi fare» (Domain Local = rule), rendendo la gestione scalabile.",c:"Add-ADGroupMember -Identity 'DL-Risorse' -Members 'GG-Contabilita'"},
+"ACCESSCHECK":{r:"La routine del kernel SeAccessCheck confronta i SID del Token del richiedente con ogni ACE nella DACL della risorsa. L'algoritmo: (1) se la DACL è null, accesso totale; (2) se vuota, accesso negato; (3) altrimenti le ACE Deny vengono valutate prima delle Allow. L'accesso è concesso solo se tutti i diritti richiesti sono coperti da ACE Allow senza Deny corrispondenti.",c:"AccessChk (Sysinternals) · icacls · Get-Acl"},
+"ALLOW / DENY":{r:"I due tipi di ACE in una DACL. Una ACE Allow concede uno o più diritti (es. Read, Write, Full Control) a un SID specifico. Una ACE Deny li nega esplicitamente ed è valutata prima di qualsiasi Allow, indipendentemente dalla posizione nella lista. Attenzione: una DACL null (assente) concede accesso completo al proprietario; una DACL vuota nega l'accesso a tutti.",c:"icacls · Set-Acl · ADSI Edit per ACE su oggetti AD"},
+"LINK":{r:"Collegare una GPO a un container SDOU (Site, Domain, Organizational Unit) definisce lo scope di applicazione della policy. Senza link la GPO esiste nel dominio ma non si applica a nessun oggetto. Un link può essere disabilitato (la GPO resta collegata ma non si applica) o rimosso (la GPO resta nel dominio). Una GPO può avere più link; un container può avere più GPO collegate.",c:"New-GPLink · Set-GPLink · Group Policy Management Console"},
+"INHERIT":{r:"Le GPO si applicano in ordine LSDOU (Local → Site → Domain → OU): prima le policy locali, poi quelle del sito, poi del dominio, poi delle OU dalla più lontana alla più vicina all'oggetto. In conflitto vince l'ultima applicata. Block Inheritance su un'OU blocca le GPO dei genitori (tranne quelle Enforced). Enforced su un link forza la GPO a prevalere su Block Inheritance.",c:"gpresult /r · rsop.msc · gpupdate /force"},
+"FILTER":{r:"Il Security Filtering affina il bersaglio di una GPO: l'oggetto deve avere i permessi «Apply Group Policy» e «Read» sul GPO object. Per default è concesso ad «Authenticated Users»; restringendolo a un gruppo specifico, solo i membri del gruppo ricevono la policy. Il WMI Filtering usa query WMI (es. versione OS, RAM) per condizionare l'applicazione ai soli computer che soddisfano i criteri.",c:"Set-GPPermission · WMI Filter Editor in GPMC"},
+"DELEGATE":{r:"La delega amministrativa in AD assegna diritti specifici su OU o singoli oggetti ad identità non-admin, modificando le ACE sulla DACL del container. Esempi: delegare il reset della password di una OU a un operatore helpdesk, o la gestione dei computer a un team IT di sede. Principio del privilegio minimo: ogni operatore ha solo i diritti necessari al suo compito.",c:"Delegation of Control Wizard (ADUC) · ADSI Edit (ACE dirette) · dsacls"},
+"REPLICATE":{r:"La replica multimaster di Active Directory propaga le modifiche tra tutti i DC. Ogni modifica riceve un numero di sequenza aggiornamento (USN) e un timestamp. Intra-sito: automatica, entro ~15 secondi dalla notifica. Inter-sito: dipende dal Site Link (intervallo minimo 15 minuti, costo, schedule). La convergenza è garantita: tutte le modifiche raggiungono tutti i DC, ma con latenza variabile.",c:"repadmin /showrepl · repadmin /replsummary · Get-ADReplicationFailure"},
+"AUDIT":{r:"L'auditing di sicurezza AD si configura su due livelli: la Advanced Audit Policy (via GPO → Computer → Windows Settings → Security → Advanced Audit) definisce quali categorie monitorare; le SACL sugli oggetti AD specificano quali accessi generano un evento. Gli Event ID chiave: 4662 (accesso a oggetto AD), 4738 (modifica account utente), 4728/4732/4756 (aggiunta a gruppi privilegiati).",c:"auditpol /get /category:* · ADSI Edit (SACL) · Event Viewer"},
+"TRACE":{r:"(Basato su) Il Security Log di Windows registra ogni evento di audit in log strutturati. I SIEM (Security Information and Event Management) come Microsoft Sentinel, Splunk o QRadar raccolgono, correlano e analizzano questi eventi per rilevare anomalie. Event ID chiave per AD: 4768/4769 (TGT/TGS Kerberos), 4776 (NTLM), 4624/4625 (logon), 4672 (logon con privilegi speciali).",c:"Event Viewer (eventvwr) · Get-WinEvent · Microsoft Sentinel"},
+"NOISE":{r:"(Basato su) Le tecniche d'attacco generano artefatti forensi: volumi anomali di query LDAP (BloodHound), richieste di TGS per SPN inusuali (Kerberoasting), connessioni SMB a catena (NTLM Relay), accessi a LSASS (credential theft). Il rapporto segnale/rumore è fondamentale per il rilevamento: attacchi «silenziosi» (basso Noise) evitano soglie di detection; attacchi rumorosi vengono rilevati prima.",c:"Microsoft Defender for Identity · Event ID 4769 (TGS anomali) · 4624 (logon massivi)"},
+"RECON":{r:"La ricognizione in ambienti AD sfrutta i permessi di lettura predefiniti: per default, tutti gli utenti del dominio possono enumerare utenti, gruppi, computer e SPN via LDAP senza privilegi elevati. Strumenti come BloodHound raccolgono queste informazioni e calcolano i percorsi di attacco più brevi verso Domain Admin. La difesa è il monitoraggio delle query LDAP anomale, non la negazione della lettura (romperebbe le applicazioni).",c:"ldapsearch · ADExplorer (Sysinternals) · PowerView · Get-ADUser/Group"},
+"TRAVERSE":{r:"(Basato su) Il lateral movement è la capacità di un attaccante di spostarsi da un sistema compromesso ad altri nella stessa rete, usando le credenziali o i token già acquisiti. In AD, le tecniche includono: Pass-the-Hash, Pass-the-Ticket, uso di sessioni remote (WMI, PSRemoting, RDP, SMB). Il tiering amministrativo (Tier 0/1/2) limita il blast radius impedendo l'uso di credenziali privilegiate su sistemi non sicuri.",c:"Event ID 4648 (logon con credenziali esplicite) · 4624 tipo 3 (rete)"},
+"COMPROMISE":{r:"(Basato su) La compromissione di un account o sistema AD è la condizione in cui un attaccante ottiene controllo sufficiente: esecuzione di codice remoto, accesso a dati, persistenza. In AD, la compromissione di un account Domain Admin equivale alla compromissione dell'intera foresta (ogni dato, ogni sistema). Il principio di Least Privilege e il tiering limitano il blast radius di ogni singola compromissione.",c:"Indicatori: Event ID 4672 (privilegi speciali) · 4688 (process creation anomalo)"},
+"ESCALATE":{r:"L'escalation di privilegi in AD consiste nell'elevare i propri diritti verso identità con più poteri. Tecniche comuni: abuso di ACL deboli (WriteDACL, GenericAll, WriteOwner su oggetti AD), sfruttamento di delega Kerberos non vincolata, aggiunta arbitraria a gruppi privilegiati, modifica della DACL per concedersi diritti su oggetti ad alto valore. La difesa principale è la revisione periodica delle ACL e l'uso di BloodHound in modalità difensiva.",c:"BloodHound (analisi percorsi) · Get-ObjectAcl (PowerView) · dsacls"},
+"CRACK":{r:"Il cracking offline delle credenziali si esegue su materiale catturato (hash NTLM, ticket Kerberos cifrati) senza ulteriore traffico verso il DC, usando Hashcat o John the Ripper con wordlist e regole. Le password deboli cedono in minuti; password lunghe e casuali (≥25 caratteri) sono impraticabili da craccare. I gMSA (Group Managed Service Accounts) usano password da 240 bit casuali gestite da AD: impossibili da craccare.",c:"Hashcat · John the Ripper — difesa: password policy (PSO), gMSA per i service account"},
+"STEAL":{r:"Il furto di credenziali dalla memoria del processo LSASS (Local Security Authority Subsystem Service): hash NTLM, ticket Kerberos, e nelle versioni vecchie di Windows credenziali in chiaro (WDigest). Richiede privilegi SYSTEM o SeDebugPrivilege. Difesa: Credential Guard (isola LSASS in una VM sicura via Hyper-V), Protected Users security group (disabilita NTLM e WDigest per i membri), riduzione delle sessioni privilegiate.",c:"Mimikatz · Rubeus — difesa: Credential Guard · Protected Users · Event ID 4656/4663 su LSASS"},
+"SESSION":{r:"Una sessione attiva in Windows è un logon con token ancora valido e credenziali potenzialmente residenti in memoria LSASS. Ogni tipo di logon (interattivo, rete, servizio, batch) ha comportamenti diversi: il logon di rete (tipo 3, es. SMB) non lascia credenziali in chiaro in memoria; il logon interattivo (tipo 2) e il logon remoto interattivo (tipo 10, RDP) sì. L'igiene delle sessioni (no Domain Admin su workstation) è difesa fondamentale.",c:"query session · Event ID 4624 (logon) · 4634/4647 (logoff)"},
+"FORGE":{r:"La falsificazione di ticket Kerberos richiede la chiave crittografica dell'account target: hash NTLM di krbtgt per il Golden Ticket (TGT arbitrario, qualsiasi utente/gruppo, validità personalizzabile), hash del service account per il Silver Ticket (TGS per quel servizio specifico, bypassa il KDC). La chiave è derivata dalla password: il reset della password invalida la chiave e quindi i ticket forgiati.",c:"Mimikatz kerberos::golden / silver — difesa: Reset krbtgt ×2 · Protected Users"},
+"SYNC":{r:"DCSync sfrutta il protocollo di replica MS-DRSR (Directory Replication Service Remote Protocol): con i diritti DS-Replication-Get-Changes e DS-Replication-Get-Changes-All sull'oggetto dominio, l'attaccante chiede al DC le credenziali di qualsiasi account come se fosse un altro DC, senza eseguire codice sul server. Permette di estrarre l'hash di krbtgt, necessario per i Golden Ticket. Difesa: restringere i diritti di replica ai soli DC tramite ACL sull'oggetto dominio.",c:"Mimikatz lsadump::dcsync — difesa: ACL sul Domain Object · Event ID 4662 con GUID replica"},
+"PERSIST":{r:"La persistenza post-compromissione in AD comprende tecniche che sopravvivono a reset di password e IR parziale: Golden Ticket (valido finché krbtgt non è resettato 2 volte), SID History injection (SID privilegiato nell'attributo sidHistory), AdminSDHolder abuse (SDProp reimposta le ACL dei gruppi protetti ogni 60 minuti), modifica delle ACE sull'oggetto dominio per mantenere i diritti di replica.",c:"Monitoraggio: Event ID 4765 (SID History aggiunto) · modifiche su AdminSDHolder · diritti di replica"},
+"RESET":{r:"Il reset della password invalida l'hash NTLM corrente e i ticket Kerberos di lunga durata dell'account. Per l'account krbtgt (la chiave maestra di tutta l'autenticazione Kerberos del dominio) va eseguito due volte con un intervallo ≥ il massimo ticket lifetime (default 10 ore): la prima volta aggiorna la chiave corrente, la seconda elimina quella precedente ancora accettata dai DC per la verifica dei TGT in transito.",c:"Set-ADAccountPassword · Reset-KrbtgtKeys.ps1 (script Microsoft) — il reset krbtgt causa re-autenticazione di tutti gli utenti"},
+"HARDEN":{r:"Il hardening di Active Directory comprende: tiering amministrativo (Tier 0 = DC/AD, Tier 1 = server, Tier 2 = workstation; le credenziali non scendono di tier), Protected Users security group (disabilita NTLM, DES, RC4, WDigest, Kerberos non vincolato per i membri), LAPS (password univoca e randomica per ogni local admin), PAW (Privileged Access Workstation), disabilitazione di NTLM, SMB signing, rimozione di SPN non necessari.",c:"Protected Users · LAPS · tiering · Microsoft Security Compliance Toolkit"},
+"TRANSFER / SEIZE":{r:"Il trasferimento graceful (Transfer) di un ruolo FSMO si esegue con il DC detentore online. Il seize forzato si usa solo con il DC irraggiungibile (guasto, corruzione). Dopo il seize di Schema Master, Domain Naming Master o RID Master il vecchio DC non deve tornare online: potrebbe riprendere il ruolo causando conflitti di SID o oggetti duplicati. PDC Emulator e Infrastructure Master possono tornare online senza rischi.",c:"Move-ADDirectoryServerOperationMasterRole · ntdsutil → seize · netdom query fsmo"},
+"RESTORE / RECYCLE":{r:"Tre modalità di ripristino AD. Non-authoritative restore: il DC si ripristina da backup e poi riceve via replica le modifiche più recenti dagli altri DC. Authoritative restore: ntdsutil marca gli oggetti ripristinati con una version number elevata così che vincano sulla replica e si propaghino agli altri DC (usato per recuperare oggetti cancellati prima di Recycle Bin). Active Directory Recycle Bin: ripristino senza downtime di oggetti con tutti gli attributi intatti.",c:"wbadmin · ntdsutil (authoritative restore) · ADAC → Deleted Objects (Recycle Bin)"},
+"REDUNDANCY":{r:"La ridondanza in Active Directory richiede almeno 2 DC per dominio per garantire alta disponibilità di autenticazione (KDC Kerberos), Group Policy, DNS e SYSVOL. I ruoli FSMO sono unici per definizione (single-master): non si duplicano ma si trasferiscono. La ridondanza del servizio si ottiene pre-pianificando il Transfer in caso di manutenzione e il Seize in caso di guasto. Best practice: i 2 DC su host fisici/cluster diversi.",c:"Get-ADDomainController -Filter * · repadmin /replsummary"},
+"TRUST":{r:"Le trust di AD usano Kerberos per autenticazione cross-boundary. Intra-forest: automatiche al momento della creazione del dominio figlio, transitive e bidirezionali (tutti i domini della foresta si fidano reciprocamente). Inter-forest: manuali, non transitive per default, richiedono DNS resolution reciproca. Il SID filtering (SID Quarantine) sulle trust inter-forest blocca i SID non appartenenti al dominio di origine, proteggendo da SID History injection cross-forest.",c:"New-ADTrust · netdom trust · Active Directory Domains and Trusts snap-in"}
+};
+
+// ===== RIFERIMENTI AL COMPENDIO =====
+// Ogni termine (carta o keyword) punta ai passaggi del compendio (compendio.html)
+// in cui quel processo è identificato e funzionale. I valori sono numeri di
+// capitolo/sezione/regola; index.html li converte in àncore (#sec-N / #s-N-M / #r-N-M-K).
+
+// Fallback per classe, se la carta non è in TERM_REF
+const CLS_REF={PROTOCOL:"5",DIRECTORY:"3",IDENTITY:"4",ACCESS:"6",POLICY:"7",TOPOLOGY:"8",THREAT:"12"};
+
+// Riferimento puntuale per nome-carta → sezioni del compendio
+const TERM_REF={
+// PROTOCOL
+"KDC":["5.3","5.4"],"Kerberos Logon":["5.2","5.3"],"TGT":["5.3"],"TGS":["5.4","5.5"],
+"NTLM":["5.6"],"LDAP":["3.3","12.1"],"DNS / SRV":["5.1"],
+// DIRECTORY
+"Forest":["3.1"],"Tree":["3.2"],"Domain":["3.2"],"Domain Controller":["3.2","5.1"],
+"RODC":["3.2"],"NTDS.DIT":["3.2"],"SYSVOL":["8.3"],"Schema":["2.3","3.3"],
+"Configuration":["3.3"],"Domain NC":["3.3"],"Global Catalog":["3.3"],
+"Organizational Unit":["3.4"],"Container":["3.4"],"Site":["3.5"],"Subnet":["3.5"],
+"Site Link":["3.5","8.2"],"Trust":["11.1","11.2"],
+// IDENTITY
+"User":["4.1","6.1"],"Computer":["4.1"],"SID":["1.3","2.4"],"Access Token":["6.1","6.2"],
+"Group · Global":["4.3","4.4"],"Group · Domain Local":["4.3","4.4"],"Group · Universal":["4.3"],
+"Distribution Group":["4.2"],"Privileged Group":["4.5"],"Special Identity":["4.5"],
+// ACCESS
+"Security Descriptor":["6.3"],"ACL":["6.3"],"DACL":["6.3","6.4"],"SACL":["6.5","13.1"],
+"ACE · Allow":["6.3","6.4"],"ACE · Deny":["6.4"],"Resource / Share":["6.4"],
+// POLICY
+"GPO":["7.1"],"GPO Link":["7.2"],"Inheritance":["7.3","7.4"],"Security Filtering":["7.5"],
+"WMI Filtering":["7.5"],"Loopback Processing":["7.6"],"PSO":["7.7"],"RSoP":["7.6"],
+"Default Domain Policy":["7.7"],"Default DC Policy":["7.7","13.1"],"GPSI":["7.1"],"CSE":["7.6"],
+// TOPOLOGY
+"FSMO · Schema Master":["9.1","9.2"],"FSMO · Domain Naming":["9.1","9.2"],
+"FSMO · RID Master":["9.1","2.4"],"FSMO · Infrastructure":["9.1"],"FSMO · PDC Emulator":["9.1"],
+"KCC":["8.2"],"ISTG / Bridgehead":["8.2"],"Replication (DFS-R)":["8.1","8.3"],
+"FRS (legacy)":["8.3"],"Functional Level":["10.4"],"Backup (wbadmin)":["10.1"],
+"Authoritative Restore":["10.2"],"Non-auth Restore":["10.2"],"Recycle Bin":["10.3"],
+"Transfer / Seize FSMO":["9.2"],"Reset krbtgt ×2":["13.4"],"Incident Response":["13.3"],
+// THREAT
+"BloodHound":["12.1"],"LDAP Enum":["12.1"],"Kerberoasting":["12.2"],"AS-REP Roast":["12.2"],
+"NTLM Relay":["12.2","5.6"],"Pass-the-Hash":["12.4"],"Pass-the-Ticket":["12.4"],
+"Abuse GenericAll":["12.3"],"AddMember Abuse":["12.3","6.2"],"Token Theft":["12.4"],
+"DCSync":["12.5"],"Golden Ticket":["12.5","13.4"],"Silver Ticket":["12.5"],
+"SID History Inject":["12.5","11.3"],"Malicious GPO":["12.3","7.2"],"AdminSDHolder":["12.5"]
+};
+
+// Riferimento per keyword (meccanica) → sezioni del compendio
+const KW_REF={
+"LOGON":["5.2","6.1"],"TOKEN":["6.1","6.2"],"MEMBEROF":["4.4","6.1"],"NEST":["4.4"],
+"ACCESSCHECK":["6.4"],"ALLOW / DENY":["6.3","6.4"],"LINK":["7.2"],"INHERIT":["7.3","7.4"],
+"FILTER":["7.5"],"DELEGATE":["3.4"],"REPLICATE":["8.1","8.2"],"AUDIT":["6.5","13.1"],
+"TRACE":["13.1","13.2"],"NOISE":["13.2"],"RECON":["12.1"],"TRAVERSE":["12.4"],
+"COMPROMISE":["12.4"],"ESCALATE":["12.3"],"CRACK":["12.2"],"STEAL":["12.2","12.4"],
+"SESSION":["12.4"],"FORGE":["12.5"],"SYNC":["12.5"],"PERSIST":["12.5"],
+"RESET":["13.4"],"HARDEN":["12.3","13"],"TRANSFER / SEIZE":["9.2"],
+"RESTORE / RECYCLE":["10.2","10.3"],"REDUNDANCY":["8.1"],"TRUST":["11.1","11.2"]
+};

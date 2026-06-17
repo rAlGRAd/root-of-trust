@@ -1,0 +1,14 @@
+# editor / OS noise
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# build / dev artifacts — not part of the published site
+backup-*/
+*.b64
+build-standalone.js
+node_modules/
+.claude/
+index.v0.2.html

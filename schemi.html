@@ -78,6 +78,10 @@
   .tg{font-family:var(--body); font-size:13px; color:var(--ink-soft); margin-top:10px;}
   .tg b{font-family:var(--display);}
   .tg a{font-family:var(--mono); font-size:12px; color:var(--def); text-decoration:none; border-bottom:1px dotted var(--def);}
+  /* comando che svolge l'operazione del diagramma */
+  .cmd-line{font-family:var(--mono); font-size:11.5px; background:#11141b; color:#cfe3ff; border-radius:6px; padding:7px 10px; margin:6px 0 10px; line-height:1.55; word-break:break-word;}
+  .cmd-line b{color:#e8c9a0;}
+  .cmd-line .lab{color:#8a93a6; text-transform:uppercase; letter-spacing:.1em; font-size:9.5px; margin-right:7px;}
   @media(max-width:680px){ .two{grid-template-columns:1fr;} .wrap{padding:0 14px 80px;} }
 </style>
 </head>
@@ -174,6 +178,7 @@
   <section class="dg">
     <div class="dg-h"><span class="nn">1</span><h2>Struttura logica: Foresta → Alberi → Domini → OU</h2><a class="ref" href="compendio.html#sec-3">Cap. 3</a></div>
     <p class="cap">Foresta = confine massimo di sicurezza (Schema e Configuration replicate su TUTTI i DC). Trust interni automatici, transitivi e bidirezionali.</p>
+    <div class="cmd-line"><span class="lab">cmd</span>Install-ADDSForest -DomainName ifts.local <b>·</b> Install-ADDSDomainController -DomainName ifts.local (promozione DC)</div>
     <div class="row ctr"><a class="mc def" href="index.html#leg-forest"><b>Forest</b><i>confine di sicurezza</i></a></div>
     <div class="dn"><span class="t">▼</span><span>contiene uno o più Alberi</span></div>
     <div class="two">
@@ -197,6 +202,7 @@
   <section class="dg">
     <div class="dg-h"><span class="nn">2</span><h2>Autenticazione (chi sei) → Autorizzazione (cosa puoi fare)</h2><a class="ref" href="compendio.html#sec-6">Cap. 5–6</a></div>
     <p class="cap">Al logon nasce l'Access Token (SID utente + SID gruppi); viene confrontato con la DACL della risorsa: vince la prima ACE che consente/nega.</p>
+    <div class="cmd-line"><span class="lab">cmd</span>whoami /all <b>→</b> SID utente + SID dei gruppi del token <b>·</b> icacls / Get-Acl (DACL della risorsa)</div>
     <div class="box"><div class="lab">Autenticazione</div>
       <div class="row"><a class="mc neu" href="index.html#leg-user"><b>User</b><i>username + password</i></a><span class="ar">credenziali →</span><a class="mc neu sys" href="index.html#leg-kdc"><b>KDC / Identity store</b><i>verifica</i></a><span class="ar">⇒</span><a class="mc neu" href="index.html#leg-access-token"><b>Access Token</b><i>SID utente + SID gruppi</i></a></div>
     </div>
@@ -211,6 +217,7 @@
   <section class="dg">
     <div class="dg-h"><span class="nn">3</span><h2>Scope dei gruppi: dove funziona, chi può essere membro</h2><a class="ref" href="compendio.html#s-4-3">Cap. 4.3</a></div>
     <p class="cap">Local → solo SAM del PC · Domain Local = Rule Group (riceve le ACE) · Global = Role Group (raggruppa per ruolo) · Universal = multi-dominio (replicato su tutti i GC).</p>
+    <div class="cmd-line"><span class="lab">cmd</span>New-ADGroup -GroupScope Global|DomainLocal|Universal -GroupCategory Security</div>
     <div class="row">
       <a class="mc neu" href="index.html#leg-sam-local"><b>Local (SAM)</b><i>solo quel PC</i></a>
       <a class="mc def" href="index.html#leg-group-domain-local"><b>Domain Local</b><i>RULE · membri da ogni dominio</i></a>
@@ -223,6 +230,7 @@
   <section class="dg">
     <div class="dg-h"><span class="nn">4</span><h2>Strategia IGDLA: I → G → DL → A</h2><a class="ref" href="compendio.html#s-4-4">Cap. 4.4</a></div>
     <p class="cap">Separa "chi sei" (ruolo) da "cosa puoi fare" (regola): le Identità entrano nei Global, annidati nei Domain Local, a cui si assegna l'Access sulla risorsa.</p>
+    <div class="cmd-line"><span class="lab">cmd</span>Add-ADGroupMember -Identity DL-Risorse -Members GG-Vendite <b>·</b> icacls risorsa /grant "DL-Risorse:(R)"</div>
     <div class="row">
       <a class="mc def" href="index.html#leg-user"><b>Identities</b><i>User / Computer</i></a><span class="ar">member of →</span>
       <a class="mc def" href="index.html#leg-group-global"><b>Global</b><i>Role group</i></a><span class="ar">nest →</span>
@@ -235,6 +243,7 @@
   <section class="dg">
     <div class="dg-h"><span class="nn">5</span><h2>GPO: ereditarietà e precedenza (LSDOU)</h2><a class="ref" href="compendio.html#s-7-3">Cap. 7</a></div>
     <p class="cap">Ordine di processazione Local → Site → Domain → OU → sotto-OU: l'ultima processata (più vicina all'oggetto) vince. Enforced scavalca Block Inheritance.</p>
+    <div class="cmd-line"><span class="lab">cmd</span>gpresult /r (RSoP) <b>·</b> gpupdate /force (forza il refresh delle GPO)</div>
     <div class="row"><a class="mc def" href="index.html#leg-gpo"><b>GPO</b><i>setting · scope · application</i></a></div>
     <div class="row" style="gap:6px;align-items:stretch;">
       <span class="rr">1 · Local</span><span class="ar">→</span>
@@ -266,6 +275,7 @@
   <section class="dg">
     <div class="dg-h"><span class="nn">7</span><h2>Ruoli FSMO: 5 operazioni single-master</h2><a class="ref" href="compendio.html#sec-9">Cap. 9–10</a></div>
     <p class="cap">2 a livello foresta (1 per foresta) + 3 a livello dominio (1 per dominio). Il FRD detiene inizialmente tutti e 5.</p>
+    <div class="cmd-line"><span class="lab">cmd</span>netdom query fsmo <b>·</b> Move-ADDirectoryServerOperationMasterRole -Identity DC01 -OperationMasterRole … <b>·</b> ntdsutil → seize</div>
     <div class="two">
       <div class="box"><div class="lab">Livello FORESTA · 1 per foresta</div>
         <div class="row"><a class="mc def" href="index.html#leg-fsmo-schema-master"><b>Schema Master</b><i>modifica lo schema</i></a><a class="mc def" href="index.html#leg-fsmo-domain-naming"><b>Domain Naming</b><i>aggiunge/rimuove domini</i></a></div>
@@ -280,6 +290,7 @@
   <section class="dg">
     <div class="dg-h"><span class="nn">8</span><h2>Gerarchia DNS: Root → TLD → dominio</h2><a class="ref" href="compendio.html#s-5-1">Cap. 9</a></div>
     <p class="cap">Root (.) → TLD (.com, .it) → secondo livello → sottodomini. I DC registrano i record SRV che i client usano per trovarli.</p>
+    <div class="cmd-line"><span class="lab">cmd</span>nslookup -type=SRV _ldap._tcp.dc._msdcs.ifts.local <b>·</b> ipconfig /registerdns <b>·</b> dcdiag /test:DNS</div>
     <div class="row ctr"><a class="mc neu" href="index.html#leg-dns-zone"><b>Root "."</b><i>DNS Zone</i></a></div>
     <div class="dn"><span class="t">▼</span></div>
     <div class="row ctr"><a class="mc neu" href="index.html#leg-dns-zone"><b>.com</b><i>TLD</i></a><a class="mc neu" href="index.html#leg-dns-zone"><b>.it</b><i>TLD</i></a></div>
@@ -301,6 +312,7 @@
   <section class="dg" style="border-bottom:none;">
     <div class="dg-h"><span class="nn">9</span><h2>Siti e repliche: intrasite vs intersite</h2><a class="ref" href="compendio.html#sec-8">Cap. 11</a></div>
     <p class="cap">Intrasite (LAN): KCC, ~15 s, non compressa, max 3 hop. Intersite (WAN): Site Link (ISTG + bridgehead), compressa, basata sul costo, schedulata.</p>
+    <div class="cmd-line"><span class="lab">cmd</span>repadmin /showrepl <b>·</b> repadmin /syncall DC01 /A /e <b>·</b> repadmin /kcc</div>
     <div class="two">
       <div class="box"><div class="lab">Sito A (LAN) · KCC intrasite</div>
         <div class="row"><a class="mc def" href="index.html#leg-domain-controller"><b>DC1</b><i>Domain Controller</i></a><a class="mc def" href="index.html#leg-domain-controller"><b>DC2</b><i>Domain Controller</i></a><a class="mc def" href="index.html#leg-domain-controller"><b>DC3</b><i>Domain Controller</i></a></div>

@@ -12,3 +12,4 @@ build-standalone.js
 node_modules/
 .claude/
 index.v0.2.html
+_pdf_text.txt

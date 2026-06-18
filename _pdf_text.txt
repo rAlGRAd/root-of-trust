@@ -1,0 +1,1889 @@
+
+===== PAGINA 1 =====
+Ripasso	Completo	d'Esame
+Active	Directory	&	Windows	Server	2019
+Sicurezza	dei	sistemi	e	delle	infrastrutture	basate	su	tecnologie	Microsoft
+Modulo	3	·	Corso	IFTS	·	Docente:	Bernabei	Cinzia
+Teoria	con	diagrammi	+	Quiz	a	scelta	multipla	con	soluzioni
+
+===== PAGINA 2 =====
+1	·	Cos'è	Active	Directory	e	come	è	strutturato
+Il	problema	che	risolve
+Immagina	un'azienda	con	500	PC:	senza	un	sistema	centralizzato,	ogni	PC	ha	i	suoi	utenti	e	le	sue	password.	Se	Mario	cambia
+reparto,	devi	andare	su	ogni	PC	a	modificare	i	permessi.	Un	incubo.
+Active	Directory	Domain	Services	(AD	DS)
+	risolve	esattamente	questo:	è	un	
+database	centralizzato
+	(con	i	relativi
+servizi	per	usarlo)	che	contiene	tutti	gli	account	utente,	i	computer,	le	stampanti,	le	cartelle	condivise,	ecc.	dell'azienda.	È
+stato	introdotto	con	
+Windows	2000	Server
+	e	si	basa	sul	concetto	di	
+dominio
+:	un'unica	"autorità"	che	decide	chi	sei	e	cosa
+puoi	fare.
+AD	e	LDAP:	qual	è	la	differenza?
+AD	(Active	Directory)
+	=	il	
+database
+	vero	e	proprio	(utenti,	gruppi,	password…).
+LDAP	(Lightweight	Directory	Access	Protocol)
+	=	il	
+protocollo
+	che	usi	per	leggere,	scrivere	e	cercare	in	quel
+database.	È	come	dire:	AD	è	la	biblioteca,	LDAP	è	il	sistema	con	cui	chiedi	i	libri	al	bibliotecario.
+La	struttura	logica:	dal	piccolo	al	grande
+AD	è	organizzato	come	una	gerarchia	a	scatole	cinesi.	Ogni	livello	ha	un	ruolo	preciso:
+Elemento
+Cosa	fa	/	a	cosa	serve
+OU
+(Organizational
+Unit)
+Il	"contenitore	organizzativo"	più	piccolo.	Ci	metti	dentro	utenti,	computer,	altre	OU.	Serve	a	due	cose
+fondamentali:	
+delegare	permessi
+	(es.	"il	reparto	HR	gestisce	i	propri	utenti")	e	
+applicare	le	GPO	(Group
+Policy	Object)
+,	cioè	le	regole.	A	differenza	di	un	semplice	
+container
+,	a	una	OU	puoi	collegare	GPO	e	creare	sotto-
+OU.
+Dominio
+L'unità	amministrativa	di	base,	fatta	di	uno	o	più	DC	(Domain	Controller).	È	il	
+confine	delle	repliche
+	della
+partizione	di	dominio,	ed	è	lo	spazio	entro	cui	crei	utenti/gruppi/computer	e	le	policy	sono	valide.	Ogni	DC	del
+dominio	può	autenticare	chiunque	vi	appartenga.
+Albero	(Tree)
+Uno	o	più	domini	che	condividono	uno	
+spazio	DNS	contiguo
+:	es.	
+ifts.local
+	→	
+eu.ifts.local
+	→
+it.ifts.local
+.
+Foresta
+(Forest)
+Uno	o	più	alberi.	Il	primo	dominio	creato	è	il	
+FRD	(Forest	Root	Domain)
+.	La	foresta	è	il	
+confine	massimo	di
+sicurezza
+:	le	partizioni	Schema	e	Configuration	vengono	replicate	su	
+tutti
+	i	DC	della	foresta.	Dentro	la	stessa
+foresta	tutti	i	domini	si	fidano	automaticamente	tra	loro.
+FORESTA
+confine	di	sicurezza	·	Schema	e	Configuration	replicate	su	TUTTI	i	DC
+ALBERO	1
+namespace	DNS	contiguo
+ifts.local
+Forest	Root	Domain
+eu.ifts.local
+it.ifts.local
+OU	Users
+OU	Comp.
+ALBERO	2
+namespace	DNS	diverso	(es.	acquisizione)
+fav.local
+Tree	Root	Domain
+sales.fav.local
+trust	automatico
+Foresta	→	Alberi	(namespace	DNS)	→	Domini	→	OU.	Trust	interni	automatici,	transitivi	e	bidirezionali.
+Il	Domain	Controller	(DC)
+È	il	server	che	"fa	girare"	AD	DS.	In	pratica:
+Contiene	il	file	
+NTDS.DIT
+	=	il	database	vero	e	proprio	(utenti,	password,	configurazioni).
+Contiene	la	cartella	
+SYSVOL
+	=	script	di	logon	e	le	GPO	(Group	Policy	Object).
+I	DC	si	
+replicano
+	tra	loro	(modello	multimaster:	ognuno	può	scrivere).
+Ospita	il	servizio	
+KDC	(Kerberos	Key	Distribution	Center)
+	=	il	"guardiano"	che	autentica	gli	utenti.
+
+===== PAGINA 3 =====
+Best	practice:
+	almeno	
+2	DC
+	per	dominio	(se	uno	muore,	l'altro	regge);	per	sicurezza	usare	
+Server	Core
+	(senza
+interfaccia	grafica)	o	
+RODC	(Read-Only	Domain	Controller)
+.
+Workgroup	vs	Dominio:	perché	serve	un	dominio
+In	un	
+workgroup
+	(gruppo	di	lavoro),	ogni	PC	ha	il	suo	database	utenti	locale	chiamato	
+SAM	(Security	Accounts	Manager)
+.
+Non	c'è	nessun	punto	centrale:	se	hai	10	PC,	devi	creare	l'utente	su	tutti	e	10.
+In	un	
+dominio	AD
+,	c'è	un	unico	identity	store	condiviso	(il	database	AD	sul	DC).	Ti	autentichi	una	volta	e	accedi	a	tutte	le
+risorse	del	dominio.	È	il	concetto	di	
+Trusted	Identity	Store
+.
+Il	database	AD:	le	partizioni	di	NTDS.DIT
+Il	file	
+ntds.dit
+	(in	
+%systemroot%\NTDS\
+)	non	è	un	unico	blocco,	ma	è	diviso	in	
+partizioni	logiche
+:
+Partizione
+Cosa	contiene
+Dove	viene
+replicata
+Schema
+Le	"regole"	del	database:	quali	tipi	di	oggetti	puoi	creare	(user,	computer,
+group…)	e	quali	attributi	hanno	(password,	email…).	Pensala	come	la	struttura
+delle	tabelle.
+Tutti	i	DC	della
+foresta
+Configuration
+Configurazione	dell'infrastruttura:	siti,	repliche,	servizi.
+Tutti	i	DC	della
+foresta
+Domain	NC	(Naming
+Context)
+Gli	oggetti	veri	e	propri	del	dominio:	utenti,	gruppi,	OU,	risorse.
+Tutti	i	DC	del
+dominio
+GC	/	PAS	(Global
+Catalog	/	Partial
+Attribute	Set)
+Una	copia	
+parziale
+	di	tutti	gli	oggetti	di	
+tutta	la	foresta
+.	Serve	per	fare	ricerche
+rapide	tra	domini	senza	interrogare	ogni	DC.
+Solo	i	DC	designati
+come	GC	(Global
+Catalog)
+Application	partitions
+Es.	le	zone	DNS	integrate	in	AD	(
+DomainDnsZones
+,	
+ForestDnsZones
+).
+Personalizzabile
+Edizioni	di	Windows	Server	2019	e	installazione
+Essentials:
+	ruoli	pre-configurati	(AD	DS,	AD	CS,	DNS,	IIS,	Remote	Access).
+Standard	/	Datacenter:
+	supportano	l'
+installazione	Core
+	(senza	interfaccia	grafica	→	meno	superficie	d'attacco,	meno
+RAM:	256	MB,	3	GB	di	disco).	Gestione	solo	da	riga	di	comando	o	remota	(RDP/MMC).	La	GUI	si	può	aggiungere/rimuovere
+dopo.
+Promozione	a	DC:
+	Server	Manager	→	
+Add	Roles	and	Features
+	→	scegli	
+Active	Directory	Domain	Services
+	→	poi
+Promote	to	a	domain	controller
+.	Per	il	primo	DC:	
+Add	a	new	forest
+;	per	i	successivi:	
+Add	a	domain	controller	to	an
+existing	domain
+.	Ti	verrà	chiesto	di	impostare	la	
+password	DSRM	(Directory	Services	Restore	Mode)
+,	che	serve	per	il
+ripristino	in	caso	di	disastro.
+
+===== PAGINA 4 =====
+2	·	Sicurezza:	chi	sei	e	cosa	puoi	fare	(IAM)
+IAM:	il	sistema	che	controlla	tutto
+IAM	(Identity	and	Access	Management)
+	=	il	sistema	che	gestisce	in	modo	centralizzato	
+chi
+	può	accedere	a	
+quali	risorse
+e	con	
+quali	permessi
+.	L'idea	di	base:	ogni	persona	ha	solo	i	diritti	strettamente	necessari	per	il	proprio	lavoro	(principio	del
+privilegio	minimo
+).
+I	mattoni	della	sicurezza	AD
+Per	capire	come	funziona	l'accesso,	servono	questi	concetti	(in	ordine):
+Identity	(identità)
+	=	l'account	utente.	È	un	
+security	principal
+	(entità	di	sicurezza),	cioè	"qualcosa	a	cui	puoi	assegnare
+permessi".	Ogni	security	principal	ha	un	
+SID	(Security	Identifier)
+:	un	codice	univoco	e	immutabile	che	lo	identifica	per
+sempre.	Anche	gruppi	e	computer	hanno	un	SID.
+Access	Token
+	=	un	"documento"	che	il	sistema	crea	quando	fai	il	logon.	Contiene	il	
+tuo	SID
+	+	i	
+SID	di	tutti	i	gruppi
+	di
+cui	fai	parte.	È	il	tuo	"badge"	digitale.
+Risorsa
+	(es.	una	cartella	condivisa)	=	l'oggetto	a	cui	vuoi	accedere.	Ogni	risorsa	è	protetta	da	un	
+Security	Descriptor
+,
+che	contiene	le	regole	di	accesso.
+ACL,	DACL,	SACL,	ACE:	la	catena	dei	permessi
+Sigla
+Nome	completo
+Spiegazione	semplice
+ACL
+Access	Control	List
+L'elenco	delle	regole	di	accesso	di	una	risorsa.	Termine	generico,	comprende	DACL	e	SACL.
+ACE
+Access	Control	Entry
+Una	
+singola	regola
+	dentro	la	ACL:	dice	"il	SID	X	ha	il	permesso	Y"	(consentito	o	negato).
+DACL
+Discretionary	ACL
+La	parte	della	ACL	che	decide	
+chi	può	fare	cosa
+.	È	quella	che	associ	comunemente	ai	"permessi".
+SACL
+System	ACL
+La	parte	che	definisce	l'
+auditing
+:	quali	operazioni	vengono	
+registrate	nei	log
+.
+Autenticazione	vs	Autorizzazione
+Autenticazione
+	=	"Chi	sei?"	→	verifica	la	tua	identità	confrontando	le	tue	credenziali	(username	+	password)	con
+l'identity	store.	Due	tipi:	
+logon	interattivo
+	(accedi	al	PC	locale)	e	
+logon	di	rete
+	(accedi	a	una	risorsa	remota).
+Autorizzazione
+	=	"Puoi	farlo?"	→	confronta	il	tuo	access	token	con	la	DACL	(Discretionary	Access	Control	List)	della
+risorsa,	e	decide	se	consentirti	o	negarti	l'accesso.	Il	sistema	cerca	la	
+prima	ACE	(Access	Control	Entry)
+	che	dia	una
+risposta	(Allow	o	Deny)	per	il	tuo	SID.
+AUTENTICAZIONE	(chi	sei)
+AUTORIZZAZIONE	(cosa	puoi	fare)
+Utente
+username	+
+password	(secret)
+Identity	store
+verifica	le
+credenziali
+Access	Token
+SID	utente
+SID	dei	gruppi
+di	appartenenza
+Risorsa	→	Security	Descriptor
+DACL	(lista	di	ACE)
+ACE:	SID	→	permesso	(Allow/Deny)
+ACE:	SID	→	permesso
+SACL	=	auditing	(cosa	registrare)
+Il	sistema	cerca	la	PRIMA	ACE	che	consente/nega
+il	livello	di	accesso	richiesto	→	consenti	/	nega
+Al	logon	viene	creato	l'access	token	(SID	utente	+	SID	gruppi);	viene	confrontato	con	la	DACL	della	risorsa.
+Attenzione:
+	se	aggiungi	un	utente	a	un	gruppo,	i	nuovi	permessi	
+non
+	sono	immediati.	L'access	token	viene	rigenerato
+solo	al	prossimo	
+logon
+	(per	gli	utenti)	o	
+riavvio
+	(per	i	computer).
+
+===== PAGINA 5 =====
+3	·	Strumenti	di	amministrazione
+La	console	MMC	e	gli	snap-in
+MMC	(Microsoft	Management	Console)
+	è	il	"contenitore"	degli	strumenti	grafici	di	gestione.	Ogni	strumento	è	uno	
+snap-in
+che	ci	"agganci"	dentro.	Puoi	creare	una	MMC	personalizzata	con	gli	snap-in	che	usi	di	più.
+Snap-in
+A	cosa	serve
+AD	Users	and	Computers
+	(
+dsa.msc
+)
+Gestione	quotidiana:	crei	utenti,	gruppi,	computer,	OU
+AD	Sites	and	Services
+Gestione	repliche	e	topologia	di	rete	(siti)
+AD	Domains	and	Trusts
+Relazioni	di	trust	e	livelli	funzionali
+GPMC	(Group	Policy	Management	Console)
+Crei	e	gestisci	le	GPO	(Group	Policy	Object)
+ADAC	(AD	Administrative	Center)
+	(
+dsac.exe
+)
+Interfaccia	moderna;	Recycle	Bin,	PSO	(Password	Settings	Object)
+Sui	DC	gli	snap-in	sono	già	installati.	Su	altri	PC/server	servono	i	
+RSAT	(Remote	Server	Administration	Tools)
+.
+Per	lo	snap-in	AD	Schema:	
+regsv r32	schmmgmt.dll
+.
+Per	vedere	attributi	nascosti	(es.	Attribute	Editor):	menu	
+View	→	Advanced	Features
+.
+Il	DN	(Distinguished	Name)
+Ogni	oggetto	in	AD	ha	un	"indirizzo"	unico	che	lo	identifica	nell'albero,	es.:
+cn=Mario	Rossi,ou=Users,ou=IFTS,dc=ifts,dc=local
+cn
+	=	Common	Name	(nome	dell'oggetto),	
+ou
+	=	Organizational	Unit,	
+dc
+	=	Domain	Component.	Altri	attributi	importanti:
+userPrincipalName
+	(nome	di	accesso,	es.	
+MRossi@ifts.local
+),	
+sAMAccountName
+	(logon	pre-Windows	2000),	
+objectGUID
+(identificativo	unico	immutabile),	
+objectSid
+	(il	SID,	Security	Identifier).
+Comandi	DS	(riga	di	comando)
+Famiglia	di	comandi	per	gestire	AD	senza	GUI:
+Comando
+Cosa	fa
+dsquery
+Cerca	oggetti	e	restituisce	il	loro	DN	(Distinguished	Name)
+dsget
+Mostra	attributi	specifici	di	un	oggetto
+dsmod
+Modifica	attributi	di	un	oggetto
+dsmov e
+Sposta	un	oggetto	in	altra	OU/container
+dsadd
+Crea	un	nuovo	oggetto
+dsrm
+Elimina	un	oggetto
+Cmdlet	PowerShell	per	AD
+Cmdlet
+Cosa	fa
+Cmdlet
+Cosa	fa
+New-ADUser
+Crea	utente
+New-ADGroup
+Crea	gruppo
+Get-ADUser
+Info	utenti
+Add-ADGroupMember
+Aggiunge	a	gruppo
+Set-ADUser
+Modifica	utente
+Remov e-ADGroupMember
+Rimuove	da	gruppo
+Remov e-ADUser
+Elimina	utente
+Get-ADGroupMember
+Elenca	membri
+Enable/Disable-ADAccount
+Abilita/disabilita
+Get-ADPrincipalGroupMembership
+Gruppi	di	un	utente
+Unlock-ADAccount
+Sblocca	account
+Search-ADAccount
+Cerca	account	(disabilitati,	scaduti…)
+Set-ADAccountPassword
+Resetta	password
+Get-ADObject
+Oggetti	AD	generici
+
+===== PAGINA 6 =====
+4	·	Gestione	degli	utenti
+Cos'è	un	account	utente
+Un	account	utente	è	un	oggetto	in	AD	che	permette	due	cose:	
+autenticarsi
+	(logon	name	+	password)	e	
+ricevere	permessi
+(perché	ha	un	SID,	Security	Identifier).	Può	esistere	in	due	posti:
+In	AD	(account	di	dominio)
+	→	fai	logon	al	dominio,	accedi	a	tutte	le	risorse	del	dominio.
+Nel	SAM	locale	(Security	Accounts	Manager)
+	→	fai	logon	solo	su	quel	PC.	Attenzione:	
+sui	DC	il	database	utenti
+locale	viene	rimosso
+.
+Creare	un	utente
+dsadd	user	"cn=Mario	Rossi,OU=Users,OU=FAV,dc=ifts,dc=local"	-disabled	no	-pwd	{Pass123}	-mustchpwd	yes
+New-ADUser	-Name	"Mario	Rossi"	-Giv enName	Mario	-Surname	Rossi	`
+		-Path	'OU=Users,OU=FAV,dc=ifts,dc=local'	-SamAccountName	MRossi	`
+		-UserPrincipalName	MRossi@ifts.local	-ChangePasswordAtLogon	$true	`
+		-AccountPassword	(Conv ertTo-SecureString	-AsPlainText	"Passw0rd"	-Force)	-Enabled	$true
+Operazioni	comuni:	rinomina,	reset,	sblocco,	disabilita,	elimina
+Tutte	disponibili	da	GUI	(tasto	destro	in	AD	Users	and	Computers),	comandi	DS	o	PowerShell.	Esempio	reset	password:	
+dsmod
+user	DN	-pwd	Nuov aPwd	-mustchpwd	yes
+	oppure	
+Set-ADAccountPassword
+.
+Eliminare	un	utente	è	irreversibile:
+	si	perdono	le	
+membership
+	ai	gruppi	e	il	
+SID
+	(Security	Identifier).	Best	practice:
+prima	
+disabilitare
+	e	spostare	in	una	OU	apposita,	eliminare	solo	dopo	un	periodo.
+Attributi	dell'account	(tab	Account)
+Logon	Hours,	Log	On	To	(PC	consentiti),	
+User	must	change	password	at	next	logon
+,	
+Password	never	expires
+,	
+Account	is
+disabled
+,	
+Smart	card	required
+,	
+Account	expires
+.
+Template	user
+Un	
+template
+	è	un	account	utente	disabilitato	con	attributi	precompilati.	Quando	crei	un	nuovo	utente,	fai	tasto	destro	→	
+Copy
+e	vengono	copiati:	tab	Address	(tranne	Street),	Account,	Profile,	Organization,	Member	Of.	
+Non
+	viene	copiato	il	tab	General.
+
+===== PAGINA 7 =====
+5	·	Gestione	degli	account	computer
+Container	Computers	vs	OU
+Di	default,	i	computer	aggiunti	al	dominio	finiscono	nel	
+container	Computers
+.	Ma	è	solo	un	contenitore	"stupido":	
+non	puoi
+collegarci	GPO	né	creare	sotto-OU
+.	Best	practice:	crea	OU	dedicate	(es.	Servers	per	ruolo,	Client	per	sito).
+Join	al	dominio	e	prestage
+Join:
+	da	Proprietà	del	Sistema	→	Dominio	→	inserisci	credenziali	→	
+riavvio
+.	Servono:	oggetto	computer	in	AD	(o	permesso	di
+crearlo),	permessi	su	quell'oggetto,	e	diritti	di	
+admin	locale
+	sul	PC.
+Prestage
+	=	pre-creare	l'account	computer	nella	OU	giusta	(tasto	destro	sulla	OU	→	New	→	Computer).	Vantaggi:	il	PC	è	subito
+nella	OU	corretta	e	riceve	le	GPO	(Group	Policy	Object)	giuste	
+dal	primo	avvio
+;	puoi	delegare	la	join	a	utenti	specifici.
+Mettere	in	sicurezza	la	join:
+	di	default	ogni	utente	può	aggiungere	fino	a	
+10
+	macchine	al	dominio.	Per	impedirlo,
+imposta	l'attributo	
+ms-DS-MachineAccountQuota	=	0
+	(richiede	il	prestage).	Per	cambiare	la	OU	predefinita:	
+redircmp
+"DN_della_OU"
+.
+Secure	channel	e	problematiche
+Ogni	computer	è	un	account	(ha	
+sAMAccountName
+	e	password)	e	stabilisce	un	
+secure	channel
+	(canale	sicuro)	con	il	DC.	Se	si
+rompe	(per	reinstallazione,	restore	da	backup,	ecc.)	ottieni	errori	come:
+"La	relazione	di	trust	tra	questa	workstation	e	il	dominio	primario	non	è	riuscita"
+	→	secure	channel	corrotto	→
+serve	una	
+nuova	join
+.
+"Nessun	server	di	accesso	disponibile"
+	→	dominio	irraggiungibile	e	credenziali	non	in	cache.
+"Il	database	di	sicurezza	sul	server	non	ha	un	account	computer…"
+	→	oggetto	computer	disabilitato	(riabilitalo)	o
+eliminato.
+Accesso	con	utente	di	dominio:	
+DOMINIO\utente
+	o	
+utente@FQDN
+.	Utente	locale:	
+.\utente
+	o	
+NOMEPC\utente
+.
+
+===== PAGINA 8 =====
+6	·	Gestione	dei	gruppi
+Perché	servono	i	gruppi
+Senza	gruppi,	dovresti	assegnare	i	permessi	utente	per	utente	su	ogni	risorsa.	Con	50	utenti	e	20	cartelle	=	1000
+assegnazioni.	Con	i	gruppi:	metti	50	utenti	in	un	gruppo,	assegni	il	permesso	al	gruppo	→	1	assegnazione.	E	quando	arriva	un
+nuovo	dipendente,	lo	aggiungi	al	gruppo	e	ha	subito	tutti	i	permessi.
+Due	tipi	di	gruppo
+Tipo
+Caratteristiche
+Distribution
+Usato	solo	per	applicazioni	email	(liste	di	distribuzione).	
+Non	ha	SID
+	(Security	Identifier)	→	non	può	ricevere	permessi.
+Security
+Ha	un	
+SID
+	→	può	ricevere	permessi.	Può	anche	funzionare	come	lista	email.
+Scope:	dove	funziona	il	gruppo
+LOCAL
+solo	PC	locale
+DOMAIN	LOCAL
+RULE	GROUP
+GLOBAL
+ROLE	GROUP
+UNIVERSAL
+multi-dominio
+REPLICA
+SAM	locale	(no	repl.)
+DC	del	dominio
+DC	del	dominio
+tutti	i	Global	Catalog
+MEMBRI	AMMESSI
+utenti/gruppi	locali	e	dominio
+da	QUALSIASI	dominio
+solo	dello	STESSO	dominio
+da	tutta	la	foresta
+DISPONIBILITÀ	/	USO
+solo	sul	computer	locale
+nel	proprio	dominio
+gestione	accessi	a	risorse
+foresta	/	domini	trustati
+gestione	ruoli
+tutta	la	foresta
+Scope
+Replicato	su
+Chi	può	essere	membro
+Dove	si	usa	/	Ruolo	tipico
+Local
+Solo	il	SAM	(Security	Accounts
+Manager)	di	quel	PC
+Utenti/gruppi	locali	e	di
+dominio
+Solo	su	quel	computer
+Domain
+Local
+Ogni	DC	del	dominio
+Membri	da	
+qualsiasi
+dominio
+	della	foresta
+Solo	nel	proprio	dominio	→	
+Rule	Group
+	(gestisce
+l'accesso	a	una	risorsa)
+Global
+Ogni	DC	del	dominio
+Solo	dallo	
+stesso	dominio
+Usabile	in	tutta	la	foresta	→	
+Role	Group
+(raggruppa	per	ruolo)
+Universal
+Tutti	i	
+GC	(Global	Catalog)
+Da	qualsiasi	dominio	della
+foresta
+Tutta	la	foresta	→	ambienti	multi-dominio
+La	strategia	IGDLA
+È	la	best	practice	per	organizzare	i	permessi.	L'idea	è	separare	"chi	sei"	(ruolo)	da	"cosa	puoi	fare"	(regola):
+I
+Identities
+utenti/computer
+G
+Global	group
+(Role	Group)
+DL
+Domain	Local
+(Rule	Group)
+A
+Access	(ACL)
+permesso
+Risorsa
+(es.	share)
+"membro	di"	→
+Le	identità	entrano	nei	Global	(per	ruolo),	inseriti	nei	Domain	Local	(per	regola),	a	cui	si	assegna	l'accesso	alla	risorsa.
+I	→	G	→	DL	→	A:
+	le	
+Identities
+	(utenti/computer)	entrano	nei	gruppi	
+Global
+	(per	ruolo,	es.	"Vendite"),	che	a	loro	volta
+entrano	nei	gruppi	
+Domain	Local
+	(per	regola,	es.	"ACL_Cartella_Vendite_Read"),	a	cui	assegni	l'
+Access
+	(il	permesso	sulla
+risorsa).	Naming	convention:	
+ACL_risorsa_liv ello
+,	es.	
+ACL_Sales_Read
+.
+Membership:	quando	prendono	effetto	le	modifiche
+L'access	token	viene	popolato	con	i	SID	(Security	Identifier)	dei	gruppi	al	momento	del	
+logon
+	(utente)	o	
+riavvio
+	(computer).
+Quindi	le	modifiche	alla	membership	non	sono	immediate.
+
+===== PAGINA 9 =====
+Gruppi	predefiniti
+Gruppo
+Cosa	può	fare
+Administrators
+Diritti	completi	sul	dominio
+Enterprise	Admins
+Solo	nel	FRD	(Forest	Root	Domain);	controlla	tutti	i	DC	della	
+foresta
+Schema	Admins
+Modifica	lo	schema
+Domain	Admins
+Admin	del	dominio;	aggiunto	agli	Administrators	locali	dei	PC	a	dominio
+Account/Server/Backup/Print	Operators
+Gestione	account	(no	admin)	/	manutenzione	server	/	backup	/	code	di	stampa
+Special	Identities
+Gruppi	con	membership	gestita	automaticamente	da	Windows	(non	puoi	modificarli),	ma	puoi	aggiungerli	alle	ACL	(Access
+Control	List):	
+Authenticated	Users
+	(tutti	gli	autenticati,	inclusi	i	computer),	
+Everyone
+	(Authenticated	Users	+	Guest),
+Interactive
+	(logon	locale/RDP),	
+Network
+	(accesso	via	rete).
+Best	practice
+Naming	convention
+	con	prefissi	(es.	
+APP_
+,	
+ACL_
+)	→	facilita	la	ricerca.
+Protect	Object	From	Accidental	Deletion
+	(tab	Object	con	Advanced	Features).
+Delega	gestione	con	il	tab	
+Managed	By
+	+	
+Can	Update	Membership	List
+.
+
+===== PAGINA 10 =====
+7	·	Group	Policy	(GPO)
+Cos'è	il	Configuration	Management
+Immagina	di	voler	bloccare	l'accesso	al	registro	di	sistema	su	200	PC.	Farlo	uno	per	uno	è	impensabile.	Le	
+GPO	(Group
+Policy	Object)
+	sono	il	meccanismo	di	AD	per	applicare	modifiche	in	modo	centralizzato	a	utenti	e	computer.	Tre	concetti
+chiave:	il	
+setting
+	(la	singola	modifica),	lo	
+scope
+	(a	chi	si	applica),	l'
+application
+	(il	meccanismo	che	la	applica).
+Dentro	una	GPO
+Ogni	impostazione	ha	tre	stati:	
+Not	configured
+	(default)	/	
+Enabled
+	/	
+Disabled
+.
+Due	rami:	
+Computer	Configuration
+	e	
+User	Configuration
+,	ciascuno	con:	Software	Settings,	Windows	Settings,
+Administrative	Templates
+	(=	modifiche	al	registro	di	sistema,	formato	ADMX/ADML).
+Policies
+:	forzate	dal	sistema.	Se	l'utente	le	modifica,	vengono	ripristinate	al	prossimo	refresh.	
+Preferences
+:	l'utente	può
+cambiarle.
+Le	GPO	si	gestiscono	con	la	
+GPMC	(Group	Policy	Management	Console)
+	e	si	modificano	con	il	
+GPME	(Group	Policy
+Management	Editor)
+.
+GPO	locali	vs	di	dominio
+GPO	locali
+	(
+gpedit.msc
+):	valgono	solo	su	quel	PC,	hanno	la	
+priorità	più	bassa
+.
+GPO	di	dominio
+	(GPMC):	centralizzate,	sovrascrivono	le	locali.	Due	predefinite:	
+Default	Domain	Policy
+(password/lockout/Kerberos)	e	
+Default	Domain	Controllers	Policy
+	(auditing	dei	DC).
+Scope:	a	chi	si	applica	la	GPO
+Meccanismo
+Come	funziona
+GPO	Link
+(SDOU)
+Colleghi	la	GPO	a	un	
+S
+ite,	
+D
+omain	o	
+OU
+	→	questo	definisce	lo	scope	
+massimo
+.
+Security
+Filtering
+Limita	l'applicazione	ai	membri	di	
+global	group
+	specifici	(permesso	
+Apply	Group	Policy
+;	default:	Authenticated
+Users).	Per	
+escludere
+:	tab	Delegation	→	Advanced	→	
+Deny	Apply	Group	Policy
+	al	gruppo.
+WMI
+Filtering
+Applica	in	base	a	query	
+WMI	(Windows	Management	Instrumentation)
+	in	linguaggio	
+WQL
+	(simile	a	SQL),	es.
+versione	OS.
+Storage	e	refresh
+GPT	(Group	Policy	Template)
+	salvato	in	
+\\dominio\SYSVOL\dominio\Policies\{GUID}
+	con	
+GPT.INI
+	(versione),	cartelle
+Machine/User,	script.
+CSE	(Client-Side	Extensions)
+:	componenti	lato	client	che	
+applicano
+	le	impostazioni	(il	client	fa	"pull"	dal	DC).
+Refresh:
+	all'avvio	(computer)	/	logon	(utente),	poi	ogni	
+90–120	minuti
+.	Forzabile	con	
+gpupdate	/force
+.
+Ereditarietà	e	precedenza:	LSDOU
+1.	Local
+2.	Site
+3.	Domain
+4.	OU
+5.	OU	figlia
+vince	in	conflitto
+L'ultima	processata	prevale	in	caso	di	impostazioni	contrastanti.
+Block	Inheritance
+attributo	della	OU
+Blocca	le	GPO	ereditate	"a	monte"
+(Site/Domain	non	vengono	applicate	alla	OU).
+Enforced
+attributo	del	LINK
+Scavalca	il	Block	Inheritance	e
+vince	anche	sui	conflitti.	→	ha	la	priorità	assoluta
+Ordine	di	processazione:	
+Local	→	Site	→	Domain	→	OU	→	sotto-OU
+.	La	GPO	processata	
+per	ultima	vince
+	in	caso	di
+conflitto	(cioè	quella	più	"vicina"	all'oggetto).
+Link	Order
+:	numero	più	basso	=	più	in	alto	=	prioritario.
+Block	Inheritance
+	(attributo	della	OU):	blocca	le	GPO	ereditate	"a	monte".
+Enforced
+	(attributo	del	link):	scavalca	il	Block	Inheritance	e	vince	su	qualsiasi	conflitto.	Ha	
+priorità	assoluta
+.
+
+===== PAGINA 11 =====
+Loopback	Processing
+Normalmente,	le	impostazioni	Computer	vengono	dalla	GPO	del	computer,	e	quelle	User	dalla	GPO	dell'utente.	Ma	in	ambienti
+come	kiosk,	sale	riunioni,	lab,	VDI:	vuoi	che	
+chiunque
+	si	colleghi	a	quel	PC	riceva	le	
+stesse	impostazioni	utente
+.	Il	loopback
+fa	esattamente	questo:	applica	le	impostazioni	
+User
+	contenute	nelle	GPO	del	
+computer
+.
+Si	attiva	in:	
+Computer	Configuration\Policies\Administrativ e	Templates\System\Group	Policy	→	Configure	user	Group	Policy
+loopback	processing	mode
+.
+REPLACE
+MERGE
+GPO	Computer
+(impost.	User)
+GPO	Utente
+IGNORATA
+Applica	SOLO	le	impostazioni	User	del	Computer
+GPO	Computer
+(impost.	User)
+GPO	Utente
+applicata
+Combina	Computer	+	Utente
+in	conflitto	vince	il	COMPUTER
+Troubleshooting:	RSoP
+RSoP	(Resultant	Set	of	Policy)
+	=	il	risultato	complessivo	di	tutte	le	GPO	su	un	utente/computer.
+gpresult	/r
+	(riepilogo)	·	
+gpresult	/s	PC	/h	report.html
+	(report	HTML).
+Group	Policy	Results
+	(wizard	GPMC):	stato	reale.	Richiede	credenziali	admin,	porte	135/445,	logon	già	fatto.
+Group	Policy	Modeling
+	(wizard	GPMC):	analisi	"what-if"	(simulazione).
+Event	log:	
+System
+,	
+Application
+	(CSE,	Client-Side	Extensions),	
+Group	Policy	Operational
+.
+
+===== PAGINA 12 =====
+8	·	Password	Policy,	Lockout,	PSO	e	GPSI
+Password	Policy	(valori	predefiniti	della	Default	Domain	Policy)
+Impostazione
+Default
+Cosa	significa
+Enforce	password	history
+24
+Ricorda	le	ultime	24	password	→	non	le	puoi	riutilizzare
+Max	password	age
+42	giorni
+Dopo	42	giorni	devi	cambiarla
+Min	password	age
+1	giorno
+Devi	aspettare	almeno	1	giorno	prima	di	cambiarla	di	nuovo
+Min	password	length
+7	caratteri
+Lunghezza	minima
+Complexity
+Enabled
+Richiede	maiuscole,	minuscole,	numeri	o	simboli
+Reversible	encryption
+Disabled
+Se	abilitata,	la	password	è	meno	sicura
+Account	Lockout	Policy
+Impostazione
+Significato
+Lockout	threshold
+Quanti	tentativi	sbagliati	prima	di	bloccare	l'account.	
+Default:	0
+	=	non	si	blocca	mai	→	rischio	
+brute
+force
+!
+Lockout	duration
+Per	quanto	tempo	resta	bloccato
+Reset	account	lockout
+after
+Dopo	quanto	tempo	senza	errori	il	contatore	si	azzera
+Esempio:
+	threshold	3,	duration	15	min,	reset	10	min.	Sbagli	2	volte	→	aspetti	11	min	→	contatore	azzerato	→	il	prossimo
+errore	è	il	"primo".	Se	invece	sbagli	3	volte	di	fila	in	meno	di	10	min	→	blocco	per	15	minuti.
+Le	impostazioni	sul	
+singolo	account
+	(es.	
+Password	never	expires
+)	prevalgono	sulla	GPO	(Group	Policy	Object).
+PSO:	Fine-Grained	Password	Policy
+La	Default	Domain	Policy	impone	la	stessa	password	a	tutti.	Ma	se	vuoi	che	gli	admin	abbiano	password	più	lunghe?	Ecco	la
+PSO	(Password	Settings	Object)
+:	permette	policy	di	password	
+diverse	per	gruppi/utenti
+	nello	stesso	dominio.
+Si	crea	con	
+ADAC
+	(
+dsac.exe
+)	→	System	→	Password	Settings	Container	→	New,	oppure	con	
+PowerShell
+	o	
+ADSI	Edit
+.
+Precedence
+:	un	numero	intero.	
+Più	basso	=	più	prioritario
+.	Una	sola	PSO	è	la	"Resultant	PSO".
+PSO	collegata	
+direttamente	a	un	utente
+	prevale	su	quelle	via	gruppo.
+Le	PSO	si	collegano	a	
+utenti	o	gruppi	global
+,	
+mai	a	OU
+.
+Verifica:	
+Get-ADUserResultantPasswordPolicy	-Identity	nomeutente
+.	Se	non	c'è	PSO,	vale	la	Default	Domain	Policy.
+GPSI:	distribuzione	software	via	GPO
+GPSI	(Group	Policy	Software	Installation)
+	=	installare	software	automaticamente	via	GPO.
+Supporta	solo	pacchetti	
+.msi
+	(no	.exe).	Upgrade	con	patch	
+.msp
+.	Il	pacchetto	deve	stare	su	una	
+share	di	rete
+.
+Assigned:
+	installazione	automatica	all'avvio	del	PC	(computer)	o	al	logon	(utente).	
+Published:
+	disponibile	su	richiesta,
+non	installato	automaticamente.
+Viene	eseguito	con	privilegi	elevati,	ma	
+nessun	feedback	centralizzato
+	sull'esito	(per	quello	servono	SCCM/Intune).
+
+===== PAGINA 13 =====
+9	·	DNS
+A	cosa	serve	il	DNS
+I	computer	comunicano	con	indirizzi	IP	(es.	10.0.0.11),	ma	le	persone	ricordano	meglio	i	nomi	(es.	
+hqdc01.contoso.com
+).	Il	
+DNS
+(Domain	Name	System)
+	fa	la	traduzione:	nome	→	IP.	AD	e	DNS	sono	strettamente	legati:	il	dominio	AD	ha	un	nome	DNS	e	i
+DC	registrano	i	propri	record	
+SRV	(Service	Locator)
+	nel	DNS,	che	i	client	usano	per	trovare	i	DC.
+Gerarchia	DNS
+Root	
+"."
+.com
+.it
+contoso.com
+ifts.it
+2°	livello	/
+domini
+Resource	Records	principali:	A	/	AAAA,	CNAME,	MX,	NS,	PTR,	SRV
+Root	(
+.
+)	→	TLD	(Top-Level	Domain:	
+.com
+,	
+.it
+)	→	secondo	livello	(
+contoso.com
+)	→	sottodomini	(
+eu.contoso.com
+).
+Una	
+zona
+	=	un	database	su	un	DNS	server	che	risolve	i	nomi	di	una	porzione	dello	spazio	DNS.	Il	server	che	la	detiene	è
+autoritativo
+	per	quel	dominio.	Le	zone	possono	essere	
+integrate	in	AD
+	(salvate	nel	database	AD	con	replica
+personalizzabile).
+Resource	Records	(RR)
+Record
+Cosa	fa
+Esempio
+A	/	AAAA
+Host:	nome	→	IP	(IPv4	/	IPv6)
+hqdc01	→	10.0.0.11
+CNAME
+Alias:	nome	→	nome
+ftp	→	serv er01.contoso.com
+MX
+Mail	Exchange:	punta	al	server	di	posta
+contoso.com	→	mail.contoso.com
+NS
+Name	Server:	indica	il	DNS	autoritativo
+contoso.com	→	ns1.contoso.com
+PTR
+Pointer:	IP	→	nome	(Reverse	Lookup)
+11.0.0.10	→	hqdc01
+SRV
+Service	Locator:	i	client	lo	usano	per	trovare	i	DC
+_ldap._tcp.contoso.com
+Query	ricorsiva	vs	iterativa
+Ricorsiva:
+	chiedi	al	DNS	e	lui	fa	tutto	il	lavoro:	prosegue	la	ricerca	tra	più	server	e	ti	dà	il	risultato	finale.	
+Iterativa:
+	il	DNS	ti
+dà	solo	ciò	che	sa	("best	guess")	e	tocca	a	te	continuare.	Il	
+resolver
+	è	il	client:	consulta	prima	la	propria	cache	(popolata
+anche	dal	file	HOSTS).	Se	il	primo	DNS	dà	risposta	negativa,	il	secondario	
+non
+	viene	interpellato.
+Risolvere	nomi	esterni
+Forwarders:
+	inoltra	le	query	non	risolte	a	un	DNS	esterno	(es.	ISP).
+Conditional	forwarders:
+	come	sopra	ma	
+solo	per	domini	specifici
+.
+Root	hints:
+	query	iterative	partendo	dai	server	root	(
+.
+);	lista	aggiornata	via	Windows	Update.
+Secondary	zone:
+	copia	autoritativa	in	sola	lettura	di	una	zona	di	un	altro	server.
+Stub	zone:
+	mantiene	aggiornati	dinamicamente	i	record	NS	(Name	Server)	di	riferimento.
+Reverse	Lookup	Zone
+Serve	a	ottenere	il	
+nome	da	un	IP
+	(il	contrario	del	normale).	L'IP	viene	salvato	"a	ritroso"	nel	dominio	speciale	
+in-addr.arpa
+(es.	IP	
+10.0.1.34
+	→	query	
+34.1.0.10.in-addr.arpa
+)	tramite	record	
+PTR	(Pointer)
+.	Non	obbligatoria	ma	raccomandata.
+Troubleshooting	DNS
+Lato	server:
+	Event	log,	Debug	logging,	
+dcdiag	/test:DNS
+.	
+Lato	client:
+	
+ipconfig	/all
+	(configurazione),	
+nslookup
+	(interroga
+un	DNS	senza	cache;	es.	
+nslookup	-type=MX	gmail.com
+),	
+ipconfig	/displaydns
+	(mostra	cache),	
+ipconfig	/flushdns
+	(svuota
+cache),	
+ipconfig	/registerdns
+	(registra	il	record	del	client).
+
+===== PAGINA 14 =====
+10	·	Domain	Controller:	ruoli	FSMO,	livelli,	RODC
+FSMO:	le	5	operazioni	"single	master"
+AD	è	
+multimaster
+	(ogni	DC	può	scrivere),	ma	alcune	operazioni	
+devono
+	essere	gestite	da	un	solo	DC	alla	volta	per	evitare
+conflitti.	Questi	sono	i	
+FSMO	(Flexible	Single	Master	Operations)
+,	detti	anche	"Operations	Master	Roles":
+Livello	FORESTA	(1	per	foresta)
+Schema	Master
+unico	a	modificare	lo	schema
+Domain	Naming	Master
+aggiunge/rimuove	domini	alla	foresta
+Livello	DOMINIO	(1	per	dominio)
+RID	Master
+distribuisce	i	pool	di	RID	(per	i	SID)
+Infrastructure	Master
+membership	cross-dominio	(no	GC)
+PDC	Emulator
+password,	target	GPO,	ora	del	dominio
+Ruolo
+Livello
+Cosa	fa
+Schema
+Master
+Foresta	(1	in
+tutta	la	foresta)
+L'unico	che	può	modificare	lo	schema	(la	struttura	del	database)
+Domain
+Naming
+Master
+Foresta	(1	in
+tutta	la	foresta)
+Aggiunge/rimuove	domini	alla	foresta
+RID	Master
+Dominio	(1	per
+dominio)
+Distribuisce	pool	di	
+RID	(Relative	Identifier)
+	ai	DC,	usati	per	comporre	i	SID	(Security
+Identifier)	dei	nuovi	oggetti
+Infrastructure
+Master
+Dominio	(1	per
+dominio)
+Aggiorna	i	riferimenti	a	oggetti	di	altri	domini	nelle	membership;	interroga	il	GC	(Global	Catalog)
+PDC	Emulator
+Dominio	(1	per
+dominio)
+Primo	a	conoscere	le	password	modificate;	target	predefinito	per	modifiche	alle	GPO	(Group
+Policy	Object);	
+sorgente	oraria
+	del	dominio;	compatibilità	PDC
+Best	practice:
+	Schema	+	Domain	Naming	insieme	su	un	GC	(Global	Catalog);	RID	+	PDC	sullo	stesso	DC;	Infrastructure
+su	un	DC	che	
+non
+	sia	GC	(a	meno	che	tutti	i	DC	siano	GC,	e	in	quel	caso	il	ruolo	è	superfluo).	Il	FRD	(Forest	Root	Domain)
+detiene	inizialmente	tutti	e	5	i	ruoli.
+Transfer	vs	Seize
+Identificare:
+	
+netdom	query	fsmo
+,	
+ntdsutil
+,	snap-in	(PDC/RID/Infrastructure	→	AD	U&C;	Schema	→	AD	Schema;	Domain
+Naming	→	AD	Domains	and	Trusts).
+Transfer
+	(DC	online,	operazione	ordinata):	snap-in	→	Operations	Master	→	Change,	oppure	PowerShell:	
+Mov e-
+ADDirectoryServ erOperationMasterRole	-Identity	"DC01"	-OperationMasterRole	PDCEmulator,RIDMaster,...
+Seize
+	=	forzatura,	solo	se	il	DC	che	detiene	il	ruolo	è	
+irraggiungibile
+:	
+ntdsutil
+	→	
+seize	<ruolo>
+	oppure	il	cmdlet	con	
+-
+Force
+.	Dopo	un	seize	di	
+Schema,	RID	o	Domain	Naming
+,	il	vecchio	DC	
+non	può	tornare	online
+:	va	decommissionato.
+Solo	PDC	e	Infrastructure	tollerano	il	rientro.
+Livelli	di	funzionalità
+Definiscono	le	funzionalità	AD	disponibili	e	la	versione	minima	dei	DC.	Il	livello	di	
+dominio
+	può	essere	≥	a	quello	di	
+foresta
+,
+mai	inferiore.	L'innalzamento	e	la	migrazione	della	replica	FRS	→	DFS-R	sono	
+irreversibili
+.
+RODC	(Read-Only	Domain	Controller)
+DC	in	sola	lettura,	pensato	per	sedi	periferiche	meno	sicure.	Si	
+pre-crea
+	l'account	(tasto	destro	su	OU	Domain	Controllers	→
+Pre-Create	Read-only	Domain	Controller	Account),	si	può	delegare	l'installazione	a	un	gruppo.	Il	server	deve	essere	in
+workgroup;	poi	si	esegue	il	wizard	di	promozione	scegliendo	l'opzione	RODC.
+
+===== PAGINA 15 =====
+11	·	Siti	e	repliche
+Cos'è	un	sito
+Un	
+Site
+	è	un	costrutto	logico	che	rappresenta	la	
+struttura	fisica
+	della	rete:	un	gruppo	di	subnet	IP	collegate	da	reti	veloci
+(LAN).	Serve	a:	
+ottimizzare	l'autenticazione
+	(il	client	cerca	prima	un	DC	nel	proprio	sito),	
+controllare	la	replica
+,	
+gestire	il
+traffico	WAN
+.
+Gestione:	
+AD	Sites	and	Services
+.	Il	sito	di	default	è	
+Default-First-Site-Name
+	(rinominabile	da	Enterprise	Admin).
+Una	
+subnet
+	si	associa	a	
+un	solo	sito
+;	un	sito	può	avere	più	subnet.	Se	la	subnet	di	un	client	non	è	definita	→	il	client	è
+"fuori	sito"	e	non	sa	quale	DC	contattare.
+I	DC	registrano	i	record	
+SRV	(Service	Locator)
+	nel	DNS	sia	in	
+_tcp.dominio
+	(tutti	i	DC)	sia	in	
+_tcp.sito._sites.dominio
+(DC	del	sito).
+Repliche	intrasite	vs	intersite
+SITO	A	(LAN)
+DC1
+DC2
+DC3
+KCC	genera	la	topologia	·	max	3	hop
+SITO	B	(LAN)
+DC4
+DC5
+KCC	(intrasite)
+bridgehead
+bridgehead
+SITE	LINK	(ISTG)
+compressa	·	costo	·	schedulata
+Intrasite:	frequente	(~15	s),	non	compressa,	incrementale	(KCC).	Intersite:	compressa,	basata	sul	costo	del	site	link,	schedulata	(ISTG	+	bridgehead).
+Intrasite	(stesso	sito,	LAN)
+Intersite	(tra	siti,	WAN)
+Frequenza
+Molto	frequente	(~15	sec),	automatica
+Schedulata	(default	ogni	3	h;	min/consigliato	15	min)
+Compressione
+No	(LAN	veloce)
+Sì	(link	WAN	più	lento)
+Tipo
+Incrementale	(solo	le	modifiche)
+Basata	sul	
+costo
+	del	site	link	(sceglie	il	più	basso)
+I	componenti	della	topologia
+Componente
+Ruolo
+KCC	(Knowledge	Consistency
+Checker)
+Servizio	che	genera	
+automaticamente
+	la	topologia	di	replica	
+intrasite
+;	garantisce	max	
+3
+hop
+	tra	DC
+ISTG	(Intersite	Topology
+Generator)
+Costruisce	la	topologia	di	replica	
+intersite
+;	seleziona	i	bridgehead	server
+Site	Link
+Collega	due	o	più	siti;	al	suo	interno	si	creano	connection	object
+Bridgehead	Server
+DC	che	gestisce	la	replica	intersite	per	il	proprio	sito	(auto-selezionato	dall'ISTG	o	configurato
+manualmente)
+Monitoraggio	repliche
+repadmin	/showrepl	hqdc01						
+#	stato	repliche	del	DC
+repadmin	/replicate	dc2	dc1	dc=contoso,dc=com			
+#	forza	replica
+repadmin	/syncall	hqdc01	/A	/e	
+#	sincronizza	tutto
+repadmin	/kcc																		
+#	ricalcola	topologia
+Global	Catalog	(GC)
+Un	DC	che	è	anche	
+GC	(Global	Catalog)
+	contiene	una	copia	
+completa
+	degli	oggetti	del	proprio	dominio	+	un	sottoinsieme
+parziale
+	(
+PAS,	Partial	Attribute	Set
+)	di	tutti	gli	altri	domini	della	foresta.	Questo	permette	ricerche	e	autenticazioni	
+a
+livello	di	foresta
+	senza	interrogare	ogni	singolo	dominio.
+
+===== PAGINA 16 =====
+12	·	Continuità	del	servizio:	backup	e	ripristino
+Cosa	succede	quando	cancelli	un	oggetto
+Senza	Recycle	Bin	attivo:	l'oggetto	viene	"svuotato"	di	quasi	tutti	gli	attributi	(restano	SID,	objectGUID,	lastKnownParent,
+sAMAccountName),	spostato	nel	container	
+Deleted	Objects
+	e	marcato	
+isDeleted
+.	Puoi	"rianimarlo"	con	
+LDP.exe
+	entro	il
+tombstoneLifetime
+	(default	180	giorni),	ma	devi	ripopolare	tutti	gli	attributi	a	mano.
+Recycle	Bin	(Cestino	di	AD)
+Richiede	DFL	(Domain	Functional	Level)	≥	
+Windows	Server	2008	R2
+.	Una	volta	attivato,	
+non	si	può	più	disattivare
+.
+Aggiunge	uno	stato	"Logically	deleted"	che	conserva	
+molti	più	attributi
+	(membership,	SID	history,	logon	info…).	Si	attiva	da
+ADAC	(AD	Administrative	Center)	o	con	
+Enable-ADOptionalFeature
+.
+Ciclo	di	vita	con	Recycle	Bin:
+	Deleted	(per	msDS-deletedObjectLifetime)	→	Tombstone	(per	tombstoneLifetime)	→	garbage	collection	→
+rimozione	definitiva.
+Strumenti	di	backup
+Windows	Server	Backup
+	(snap-in)	/	
+wbadmin.exe
+.
+Tipi:	completo	(tutti	i	volumi),	volumi	selezionati,	
+System	State
+,	
+Bare	Metal	Recovery
+	(tutti	i	volumi	critici).
+Su	un	DC	il	
+System	State
+	contiene:	database	AD	(
+ntds.dit
+),	SYSVOL,	registro	di	Windows,	file	di	boot.
+Restore:	authoritative	vs	non-authoritative
+Modalità
+Quando	usarla
+Non-authoritative
+(default)
+Ripristina	il	DC	al	backup,	poi	
+si	aggiorna	dagli	altri	DC
+	via	replica.	Nessuna	modifica	forzata	agli	altri.
+Authoritative
+Per	
+recuperare	oggetti	cancellati	per	errore
+:	gli	oggetti	marcati	ricevono	un	
+numero	di	versione	più
+alto
+	e	sovrascrivono	gli	altri	DC.
+Procedura	DSRM	(Directory	Services	Restore	Mode)
+#	Av v io	remoto	in	DSRM
+bcdedit	/set	safeboot	dsrepair
+shutdown	-t	0	-r
+#	Logon	con	password	DSRM	→	restore	con	wbadmin
+#	Per	l'authoritativ e:	marcare	gli	oggetti
+ntdsutil	→	authoritativ e	restore	→	restore	subtree	"objectDN"
+#	Ripristino	av v io	normale
+bcdedit	/deletev alue	safeboot
+shutdown	-t	0	-r
+Localmente	si	entra	in	DSRM	(Directory	Services	Restore	Mode)	premendo	
+F8
+	all'avvio.
+
+===== PAGINA 17 =====
+13	·	Domini,	foreste	e	relazioni	di	trust
+Struttura
+Foresta	a	singolo	dominio:
+	un'unica	partizione,	un	namespace	DNS,	gestione	semplice.	
+Foresta	multi-dominio/multi-
+albero:
+	più	costosa	e	rischiosa,	ma	utile	per	
+indipendenza	organizzativa
+	(es.	acquisizioni).
+Relazioni	di	trust
+Un	
+trust
+	è	una	relazione	tra	due	domini	che	permette	
+autenticazione
+	(logon)	e	
+autorizzazione
+	(accesso	a	risorse)	senza
+migrare	gli	utenti.	Es.	Mario	di	
+ifts.local
+	accede	a	una	share	di	
+fav .local
+	grazie	al	trust.
+Caratteristica
+Significato
+One-way
+Solo	un	dominio	si	fida	dell'altro	(utenti	di	B	accedono	a	risorse	di	A,	non	viceversa)
+Two-way
+Entrambi	si	fidano	reciprocamente
+Transitivo
+Se	A↔B	e	B↔C	→	allora	A↔C
+Trust	intra-forest	vs	inter-forest
+Intra-forest	(nella	stessa	foresta):
+	tutti	i	domini	sono	
+automaticamente
+	trustati,	con	trust	
+transitivi	e	bidirezionali
+,
+senza	configurazione	manuale.
+Inter-forest	(tra	foreste	diverse):
+	da	creare	
+manualmente
+.	Requisiti:	trust	bidirezionale,	DNS	risolvibili	tra	le	foreste,
+account	admin	su	entrambi	i	domini.
+Shortcut	Trust:
+	trust	manuale	
+interno	alla	stessa	foresta
+,	per	
+velocizzare
+	l'autenticazione	tra	due	domini	"lontani"
+nell'albero.
+Forest	Trust:
+	trust	tra	
+due	foreste	distinte
+.
+Gestione	dei	trust
+GUI:	
+Active	Directory	Domains	and	Trusts
+	→	tab	Trusts	→	New	Trust	(completare	su	entrambe	le	foreste).	Riga	di
+comando:
+netdom	trust	DominioTrusting	/domain:DominioTrusted	/v erify			
+#	v erifica
+netdom	trust	DominioTrusting	/domain:DominioTrusted	/remov e	/UserD:User	/PasswordD:*		
+#	rimuov e
+
+===== PAGINA 18 =====
+Quiz	a	scelta	multipla	—	50	domande
+Una	sola	risposta	corretta	per	domanda.	Le	soluzioni	commentate	sono	in	fondo	al	documento.
+Modulo	1	—	Concetti	e	struttura
+1.
+	Con	quale	versione	di	Windows	Server	è	stato	introdotto	Active	Directory?
+○	a)	Windows	NT	4.0
+○	b)	Windows	2000	Server
+○	c)	Windows	Server	2003
+○	d)	Windows	Server	2008
+2.
+	Qual	è	la	differenza	tra	AD	e	LDAP?
+○	a)	LDAP	è	il	database,	AD	è	il	protocollo
+○	b)	AD	è	il	database,	LDAP	è	il	protocollo	per	interrogarlo
+○	c)	Sono	sinonimi
+○	d)	LDAP	è	un	servizio	di	Active	Directory
+3.
+	Qual	è	il	confine	massimo	di	sicurezza	in	Active	Directory?
+○	a)	Il	dominio
+○	b)	L'albero	(tree)
+○	c)	La	foresta	(forest)
+○	d)	L'OU	(Organizational	Unit)
+4.
+	Quali	partizioni	di	NTDS.DIT	vengono	replicate	su	TUTTI	i	DC	della	foresta?
+○	a)	Domain	NC	e	Configuration
+○	b)	Schema	e	Configuration
+○	c)	Schema	e	Domain	NC
+○	d)	Tutte	le	partizioni
+5.
+	A	cosa	serve	il	Global	Catalog	(GC)?
+○	a)	Contiene	una	copia	completa	di	tutti	gli	oggetti	della	foresta
+○	b)	Contiene	una	copia	parziale	(PAS)	di	tutti	gli	oggetti	della	foresta	per	ricerche	rapide	cross-dominio
+○	c)	Serve	solo	per	il	DNS
+○	d)	È	il	database	di	backup	dei	DC
+6.
+	In	cosa	differisce	una	OU	da	un	container	in	AD?
+○	a)	Un	container	supporta	le	GPO,	una	OU	no
+○	b)	Una	OU	supporta	le	GPO	e	le	sotto-OU,	un	container	no
+○	c)	Sono	identici
+○	d)	Una	OU	non	può	contenere	utenti
+Modulo	2	—	Sicurezza	/	IAM
+7.
+	Cosa	contiene	l'Access	Token	rilasciato	al	logon?
+○	a)	Solo	il	SID	dell'utente
+○	b)	Il	SID	dell'utente	e	i	SID	dei	gruppi	di	appartenenza
+○	c)	Username	e	password
+○	d)	La	lista	delle	risorse	accessibili
+
+===== PAGINA 19 =====
+8.
+	Qual	è	la	funzione	della	DACL	(Discretionary	ACL)?
+○	a)	Registrare	le	operazioni	nei	log	(auditing)
+○	b)	Determinare	chi	può	fare	cosa	sull'oggetto	(permessi	di	accesso)
+○	c)	Definire	la	policy	di	password
+○	d)	Gestire	la	replica	tra	DC
+9.
+	Quando	il	sistema	confronta	l'Access	Token	con	la	ACL	della	risorsa,	quale	criterio	usa?
+○	a)	Somma	tutti	i	permessi	Allow	e	Deny
+○	b)	Usa	l'ultima	ACE	della	lista
+○	c)	Cerca	la	prima	ACE	che	consente	o	nega	l'accesso	richiesto
+○	d)	Applica	sempre	il	permesso	Deny
+10.
+	Quando	diventano	effettive	le	modifiche	alla	membership	di	un	gruppo?
+○	a)	Immediatamente
+○	b)	Dopo	un	gpupdate	/force
+○	c)	Al	prossimo	logon	(utente)	o	riavvio	(computer)
+○	d)	Dopo	15	minuti
+Modulo	3	—	Strumenti
+11.
+	Quale	comando	registra	lo	snap-in	Active	Directory	Schema?
+○	a)	regsvr32	dsa.msc
+○	b)	regsvr32	schmmgmt.dll
+○	c)	Install-WindowsFeature	AD-Schema
+○	d)	dsadd	schema
+12.
+	Quale	comando	DS	effettua	una	ricerca	e	restituisce	il	DN	dell'oggetto?
+○	a)	dsget
+○	b)	dsmod
+○	c)	dsquery
+○	d)	dsrm
+13.
+	Quale	cmdlet	PowerShell	mostra	tutti	i	gruppi	di	cui	fa	parte	un	utente?
+○	a)	Get-ADGroupMember
+○	b)	Get-ADPrincipalGroupMembership
+○	c)	Get-ADUser	-MemberOf
+○	d)	Search-ADAccount
+Modulo	4	—	Utenti
+14.
+	Cosa	si	perde	in	modo	irreversibile	eliminando	un	utente?
+○	a)	Solo	la	password
+○	b)	Le	membership	ai	gruppi	e	il	SID
+○	c)	Solo	il	nome
+○	d)	Nulla,	è	tutto	recuperabile
+15.
+	Creando	un	utente	da	template,	quale	campo	del	tab	Address	NON	viene	copiato?
+○	a)	City
+○	b)	Country
+○	c)	Street	address
+○	d)	ZIP	code
+
+===== PAGINA 20 =====
+16.
+	Qual	è	la	best	practice	prima	di	eliminare	definitivamente	un	account?
+○	a)	Cambiare	la	password
+○	b)	Disabilitarlo	e	spostarlo	in	apposita	OU
+○	c)	Eliminarlo	immediatamente
+○	d)	Rinominarlo
+Modulo	5	—	Computer
+17.
+	Quante	macchine	può	aggiungere	a	dominio	un	utente	standard,	per	default?
+○	a)	0
+○	b)	5
+○	c)	10
+○	d)	Illimitate
+18.
+	Cosa	indica	l'errore	"La	relazione	di	trust	tra	questa	workstation	e	il	dominio	primario	non	è	riuscita"?
+○	a)	La	password	dell'utente	è	scaduta
+○	b)	Il	secure	channel	è	corrotto	e	serve	una	nuova	join
+○	c)	Il	DNS	non	funziona
+○	d)	L'account	utente	è	disabilitato
+19.
+	Qual	è	il	vantaggio	principale	del	prestage	di	un	account	computer?
+○	a)	Non	serve	il	riavvio
+○	b)	Il	PC	è	subito	nella	OU	corretta	e	riceve	le	GPO	giuste	dal	primo	avvio
+○	c)	Non	servono	credenziali
+○	d)	Il	PC	si	aggiorna	automaticamente
+Modulo	6	—	Gruppi
+20.
+	Perché	un	distribution	group	non	può	ricevere	permessi?
+○	a)	Perché	è	disabilitato
+○	b)	Perché	non	ha	un	SID	(Security	Identifier)
+○	c)	Perché	è	solo	per	utenti	locali
+○	d)	Perché	è	di	sola	lettura
+21.
+	Quale	scope	di	gruppo	viene	replicato	su	tutti	i	Global	Catalog	della	foresta?
+○	a)	Local
+○	b)	Domain	Local
+○	c)	Global
+○	d)	Universal
+22.
+	Nella	strategia	IGDLA,	quale	scope	si	usa	come	"Role	Group"?
+○	a)	Domain	Local
+○	b)	Universal
+○	c)	Global
+○	d)	Local
+23.
+	Quale	gruppo	predefinito	esiste	solo	nel	Forest	Root	Domain	e	controlla	tutta	la	foresta?
+○	a)	Domain	Admins
+○	b)	Schema	Admins
+○	c)	Enterprise	Admins
+○	d)	Administrators
+
+===== PAGINA 21 =====
+24.
+	Nella	strategia	IGDLA,	l'ordine	corretto	è:
+○	a)	Identities	→	Domain	Local	→	Global	→	Access
+○	b)	Identities	→	Global	→	Domain	Local	→	Access
+○	c)	Global	→	Identities	→	Access	→	Domain	Local
+○	d)	Domain	Local	→	Global	→	Identities	→	Access
+Modulo	7	—	Group	Policy
+25.
+	Qual	è	l'ordine	di	processazione	delle	GPO	(precedenza)?
+○	a)	Domain	→	Site	→	OU	→	Local
+○	b)	OU	→	Domain	→	Site	→	Local
+○	c)	Local	→	Site	→	Domain	→	OU
+○	d)	Site	→	Local	→	Domain	→	OU
+26.
+	Se	una	OU	ha	Block	Inheritance	e	una	GPO	a	monte	è	Enforced,	chi	vince?
+○	a)	Block	Inheritance
+○	b)	La	GPO	Enforced	prevale
+○	c)	Si	annullano	a	vicenda
+○	d)	Nessuna	GPO	si	applica
+27.
+	Ogni	quanto	avviene	il	refresh	automatico	delle	GPO	(oltre	che	ad	avvio/logon)?
+○	a)	Ogni	5	minuti
+○	b)	Ogni	30	minuti
+○	c)	Ogni	90-120	minuti
+○	d)	Ogni	24	ore
+28.
+	Qual	è	la	differenza	tra	Policies	e	Preferences	in	una	GPO?
+○	a)	Le	Policies	sono	modificabili	dall'utente,	le	Preferences	no
+○	b)	Le	Policies	sono	forzate	dal	sistema;	le	Preferences	sono	modificabili	dall'utente
+○	c)	Non	c'è	differenza
+○	d)	Le	Preferences	si	applicano	solo	ai	computer
+29.
+	Nel	loopback	processing	in	modalità	Merge,	in	caso	di	conflitto	chi	prevale?
+○	a)	Le	impostazioni	User	dell'utente
+○	b)	Le	impostazioni	User	del	computer
+○	c)	Si	annullano
+○	d)	Nessuna	delle	due
+30.
+	Quale	comando	forza	il	refresh	delle	GPO?
+○	a)	gpresult	/r
+○	b)	gpupdate	/force
+○	c)	rsop.msc
+○	d)	gpedit.msc
+31.
+	Quali	sono	le	due	GPO	predefinite	di	dominio?
+○	a)	Default	User	Policy	e	Default	Computer	Policy
+○	b)	Default	Domain	Policy	e	Default	Domain	Controllers	Policy
+○	c)	Default	Local	Policy	e	Default	Site	Policy
+○	d)	Default	OU	Policy	e	Default	Group	Policy
+
+===== PAGINA 22 =====
+32.
+	Come	si	esclude	un	gruppo	dall'applicazione	di	una	GPO?
+○	a)	Si	elimina	la	GPO
+○	b)	Tab	Delegation	→	Advanced	→	Deny	Apply	Group	Policy	al	gruppo
+○	c)	Si	disabilita	la	OU
+○	d)	Si	cancella	il	link
+33.
+	Nel	loopback	processing	in	modalità	Replace,	le	impostazioni	User	provengono	da:
+○	a)	Le	GPO	dell'utente
+○	b)	Solo	le	GPO	del	computer
+○	c)	Una	combinazione	di	entrambe
+○	d)	Le	GPO	del	sito
+Modulo	8	—	Password	/	Lockout	/	PSO	/	GPSI
+34.
+	Qual	è	il	valore	di	default	del	Lockout	threshold	e	perché	è	rischioso?
+○	a)	3;	troppo	basso
+○	b)	5;	troppo	alto
+○	c)	0;	l'account	non	viene	mai	bloccato,	rischio	brute	force
+○	d)	10;	non	è	un	rischio
+35.
+	A	cosa	NON	si	può	collegare	una	PSO	(Password	Settings	Object)?
+○	a)	A	un	utente
+○	b)	A	un	gruppo	global
+○	c)	A	una	OU
+○	d)	A	più	gruppi
+36.
+	In	presenza	di	più	PSO,	quale	prevale?
+○	a)	Quella	con	precedence	più	alto
+○	b)	Quella	con	precedence	più	basso
+○	c)	L'ultima	creata
+○	d)	La	più	restrittiva
+37.
+	Quali	pacchetti	supporta	nativamente	la	GPSI?
+○	a)	Solo	.exe
+○	b)	.msi	e	.exe
+○	c)	Solo	.msi	(upgrade	con	.msp)
+○	d)	Qualsiasi	formato
+38.
+	Differenza	tra	Assigned	e	Published	nella	GPSI:
+○	a)	Assigned	=	disponibile	su	richiesta;	Published	=	automatico
+○	b)	Assigned	=	installazione	automatica;	Published	=	disponibile	su	richiesta
+○	c)	Sono	identici
+○	d)	Published	installa	solo	al	logout
+Modulo	9	—	DNS
+39.
+	Quale	record	DNS	usano	i	client	per	individuare	i	Domain	Controller?
+○	a)	A
+○	b)	MX
+○	c)	SRV
+○	d)	PTR
+
+===== PAGINA 23 =====
+40.
+	In	una	query	ricorsiva,	chi	prosegue	la	ricerca	tra	più	server	DNS?
+○	a)	Il	client
+○	b)	Il	server	DNS
+○	c)	Il	Domain	Controller
+○	d)	Nessuno
+41.
+	La	Reverse	Lookup	Zone	registra	gli	IP	nel	dominio	speciale:
+○	a)	dns.arpa
+○	b)	in-addr.arpa
+○	c)	reverse.dns
+○	d)	ptr.local
+42.
+	Differenza	tra	forwarder	e	conditional	forwarder:
+○	a)	Il	forwarder	è	più	veloce
+○	b)	Il	conditional	forwarder	inoltra	query	solo	per	domini	specifici
+○	c)	Il	forwarder	è	per	la	rete	locale
+○	d)	Non	c'è	differenza
+Modulo	10	—	FSMO
+43.
+	Quanti	ruoli	FSMO	esistono	e	come	si	distribuiscono?
+○	a)	3	a	livello	foresta,	2	a	livello	dominio
+○	b)	2	a	livello	foresta,	3	a	livello	dominio
+○	c)	5	a	livello	foresta
+○	d)	5	a	livello	dominio
+44.
+	Quale	ruolo	FSMO	è	la	sorgente	oraria	del	dominio?
+○	a)	Schema	Master
+○	b)	RID	Master
+○	c)	PDC	Emulator
+○	d)	Infrastructure	Master
+45.
+	Dopo	un	seize	di	quali	ruoli	il	vecchio	DC	NON	può	più	tornare	online?
+○	a)	PDC	e	Infrastructure
+○	b)	Schema,	RID	e	Domain	Naming
+○	c)	Solo	Schema
+○	d)	Tutti	e	5
+46.
+	Il	livello	di	funzionalità	di	dominio	può	essere	inferiore	a	quello	di	foresta?
+○	a)	Sì,	sempre
+○	b)	No,	mai	(può	essere	uguale	o	superiore)
+○	c)	Solo	se	tutti	i	DC	sono	GC
+○	d)	Solo	con	Windows	Server	2019
+Modulo	11	—	Siti	e	repliche
+47.
+	Qual	è	la	frequenza	delle	repliche	intrasite?
+○	a)	Ogni	3	ore
+○	b)	Ogni	15	minuti
+○	c)	Circa	ogni	15	secondi,	automaticamente
+○	d)	Una	volta	al	giorno
+
+===== PAGINA 24 =====
+48.
+	Quale	componente	genera	la	topologia	di	replica	intrasite?
+○	a)	ISTG	(Intersite	Topology	Generator)
+○	b)	KCC	(Knowledge	Consistency	Checker)
+○	c)	Bridgehead	Server
+○	d)	Global	Catalog
+Modulo	12	—	Backup	e	ripristino
+49.
+	Quando	si	usa	un	restore	authoritative?
+○	a)	Per	aggiornare	il	DC	dagli	altri	partner
+○	b)	Per	recuperare	oggetti	cancellati	per	errore	e	propagarli	sugli	altri	DC
+○	c)	Per	reinstallare	Windows
+○	d)	Per	cambiare	il	livello	funzionale
+50.
+	Quale	DFL	(Domain	Functional	Level)	richiede	il	Recycle	Bin?	Una	volta	attivato	si	può	disattivare?
+○	a)	DFL	2003;	sì
+○	b)	DFL	2008	R2;	no,	non	si	può	disattivare
+○	c)	DFL	2016;	sì
+○	d)	DFL	2012;	no
+
+===== PAGINA 25 =====
+Soluzioni
+1.	b)
+	Windows	2000	Server.
+2.	b)
+	AD	è	il	database,	LDAP	(Lightweight	Directory	Access	Protocol)	è	il	protocollo	per	interrogarlo.
+3.	c)
+	La	foresta	è	il	confine	massimo	di	sicurezza	(e	di	replica	per	Schema	e	Configuration).
+4.	b)
+	Schema	e	Configuration	vengono	replicate	su	tutti	i	DC	della	foresta.	Il	Domain	NC	solo	sui	DC	del	dominio.
+5.	b)
+	Il	GC	contiene	un	PAS	(Partial	Attribute	Set)	=	copia	parziale	di	tutti	gli	oggetti	della	foresta	per	ricerche	cross-dominio
+veloci.
+6.	b)
+	A	una	OU	puoi	collegare	GPO	e	creare	sotto-OU;	a	un	semplice	container	no.
+7.	b)
+	Il	SID	dell'utente	+	i	SID	di	tutti	i	gruppi	di	appartenenza.
+8.	b)
+	La	DACL	(Discretionary	ACL)	definisce	i	permessi	di	accesso	(chi	può	fare	cosa).	La	SACL	è	per	l'auditing.
+9.	c)
+	Cerca	la	prima	ACE	(Access	Control	Entry)	che	consente	o	nega	l'accesso	richiesto	ai	SID	del	token.
+10.	c)
+	Al	prossimo	logon	(utente)	o	riavvio	(computer):	il	token	viene	rigenerato	in	quel	momento.
+11.	b)
+	
+regsv r32	schmmgmt.dll
+.
+12.	c)
+	
+dsquery
+	cerca	oggetti	e	restituisce	il	DN	(Distinguished	Name).
+13.	b)
+	
+Get-ADPrincipalGroupMembership
+	mostra	i	gruppi	di	un	utente.
+14.	b)
+	Le	membership	ai	gruppi	e	il	SID	(Security	Identifier),	entrambi	irreversibili.
+15.	c)
+	Lo	Street	address	non	viene	copiato	(gli	altri	campi	Address	sì).
+16.	b)
+	Disabilitare	e	spostare	in	apposita	OU;	eliminare	solo	dopo	un	periodo.
+17.	c)
+	10	(attributo	
+ms-DS-MachineAccountQuota
+;	impostare	a	0	per	impedirlo).
+18.	b)
+	Secure	channel	corrotto	→	serve	una	nuova	join	al	dominio.
+19.	b)
+	Il	PC	è	subito	nella	OU	corretta	e	riceve	le	GPO	(Group	Policy	Object)	giuste	dal	primo	avvio.
+20.	b)
+	Non	ha	un	SID	→	non	può	ricevere	permessi	(è	solo	per	le	email).
+21.	d)
+	Universal:	replicato	su	tutti	i	GC	(Global	Catalog)	della	foresta.
+22.	c)
+	Global	=	Role	Group	(raggruppa	per	ruolo).	Domain	Local	=	Rule	Group	(regola	di	accesso).
+23.	c)
+	Enterprise	Admins:	esiste	solo	nel	FRD	(Forest	Root	Domain),	controlla	tutta	la	foresta.
+24.	b)
+	I	→	G	→	DL	→	A	(Identities	→	Global	→	Domain	Local	→	Access).
+25.	c)
+	Local	→	Site	→	Domain	→	OU	(LSDOU).	L'ultima	processata	vince.
+26.	b)
+	La	GPO	Enforced	prevale	sempre,	anche	sul	Block	Inheritance.
+27.	c)
+	Ogni	90-120	minuti.
+28.	b)
+	Le	Policies	sono	forzate	dal	sistema	(ripristinate	se	modificate);	le	Preferences	sono	modificabili	dall'utente.
+29.	b)
+	In	Merge,	in	conflitto	vincono	le	impostazioni	User	del	computer.
+30.	b)
+	
+gpupdate	/force
+.
+31.	b)
+	Default	Domain	Policy	(password/lockout/Kerberos)	e	Default	Domain	Controllers	Policy	(auditing	DC).
+32.	b)
+	Tab	Delegation	→	Advanced	→	impostare	Deny	su	Apply	Group	Policy	al	global	group	da	escludere.
+33.	b)
+	In	Replace,	le	impostazioni	User	vengono	solo	dalle	GPO	del	computer	(quelle	dell'utente	sono	ignorate).
+34.	c)
+	0	=	l'account	non	viene	mai	bloccato	→	espone	ad	attacchi	brute	force.
+35.	c)
+	A	una	OU.	Le	PSO	si	collegano	a	utenti	o	gruppi	global,	mai	a	OU.
+36.	b)
+	Quella	con	precedence	più	basso	(più	vicino	a	1).	PSO	collegata	direttamente	all'utente	prevale	su	quelle	via	gruppo.
+37.	c)
+	Solo	.msi;	gli	upgrade	si	gestiscono	con	patch	.msp.
+38.	b)
+	Assigned	=	installazione	automatica;	Published	=	disponibile	su	richiesta,	non	installato.
+39.	c)
+	SRV	(Service	Locator):	i	client	lo	usano	per	trovare	i	DC.
+40.	b)
+	In	una	query	ricorsiva	è	il	server	DNS	a	proseguire	la	ricerca	e	restituire	il	risultato	finale.
+41.	b)
+	
+in-addr.arpa
+,	tramite	record	PTR	(Pointer).
+42.	b)
+	Il	conditional	forwarder	inoltra	query	non	risolte	solo	per	domini	specifici;	il	forwarder	semplice	per	tutti.
+43.	b)
+	2	a	livello	foresta	(Schema,	Domain	Naming)	e	3	a	livello	dominio	(RID,	Infrastructure,	PDC	Emulator).
+44.	c)
+	PDC	Emulator:	sorgente	oraria,	primo	a	conoscere	le	password	modificate,	target	delle	GPO.
+45.	b)
+	Schema,	RID	e	Domain	Naming.	Solo	PDC	e	Infrastructure	tollerano	il	rientro	del	vecchio	DC.
+46.	b)
+	No:	il	dominio	può	essere	uguale	o	superiore	alla	foresta,	mai	inferiore.	L'innalzamento	è	irreversibile.
+47.	c)
+	Circa	ogni	15	secondi,	automaticamente	(LAN	veloce,	non	compresse,	incrementali).
+48.	b)
+	KCC	(Knowledge	Consistency	Checker)	per	l'intrasite;	ISTG	(Intersite	Topology	Generator)	per	l'intersite.
+49.	b)
+	Per	recuperare	oggetti	cancellati	per	errore:	gli	oggetti	marcati	ricevono	un	numero	di	versione	più	alto	e
+sovrascrivono	gli	altri	DC.
+50.	b)
+	DFL	2008	R2;	una	volta	attivato	il	Recycle	Bin	non	si	può	disattivare.
+In	bocca	al	lupo	per	l'esame!

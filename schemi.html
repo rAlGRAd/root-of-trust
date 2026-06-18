@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Schemi del modulo AD DS ricreati con gli oggetti-carta: struttura foresta, autenticazione/autorizzazione, scope gruppi, IGDLA, LSDOU, loopback, FSMO, DNS, siti e repliche.">
+<title>Active Directory — Schemi del modulo (diagrammi con le carte)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+  :root{
+    --paper:#F4F5F2; --paper-2:#EAECE6; --ink:#191C1F; --ink-soft:#3C4248; --rule:#C9CDC4;
+    --def:#2E84C8; --atk:#E0542E; --neu:#C2922E;
+    --display:'Space Grotesk',system-ui,sans-serif; --body:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 22px 110px;}
+  .topnav{position:sticky;top:0;z-index:50;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 0;background:var(--paper);border-bottom:1px solid var(--rule);}
+  .topnav a{font-family:var(--display);font-weight:600;font-size:12.5px;letter-spacing:.03em;text-transform:uppercase;text-decoration:none;color:var(--ink-soft);border:1px solid var(--rule);background:#fff;padding:7px 12px;border-radius:6px;}
+  .topnav a:hover{border-color:var(--ink);color:var(--ink);}
+  .topnav a.cur{background:var(--ink);color:#fff;border-color:var(--ink);}
+
+  header.top{border-bottom:3px solid var(--ink);padding:32px 0 20px;margin-bottom:8px;}
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--neu);margin:0 0 10px;}
+  header.top h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,5vw,42px);line-height:1;letter-spacing:-.02em;margin:0;}
+  header.top p{font-family:var(--display);font-weight:500;color:var(--ink-soft);margin:12px 0 0;max-width:74ch;}
+
+  /* mini-card = oggetto carta come nodo */
+  .mc{display:inline-flex;flex-direction:column;gap:2px;min-width:104px;max-width:172px;text-decoration:none;background:#0f1218;border:2px solid var(--c);border-radius:8px;padding:7px 10px;box-shadow:0 4px 12px rgba(0,0,0,.32);transition:transform .12s,box-shadow .12s;--c:#E7B84E;}
+  .mc:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.45);}
+  .mc b{font-family:var(--display);font-size:13px;font-weight:700;color:#fff;line-height:1.12;}
+  .mc i{font-family:var(--mono);font-size:8.5px;font-style:normal;letter-spacing:.03em;text-transform:uppercase;color:var(--c);}
+  .mc.def{--c:#3FA0E6;} .mc.atk{--c:#FF6B3D;} .mc.neu{--c:#E7B84E;}
+  .mc.sys{background:#15110a;}
+
+  .dg{padding:22px 0 8px;border-bottom:1px dashed var(--rule);}
+  .dg-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:6px 0 12px;}
+  .dg-h .nn{font-family:var(--mono);font-size:12px;color:#fff;background:var(--ink);padding:2px 8px;}
+  .dg-h h2{font-family:var(--display);font-weight:700;font-size:18px;margin:0;letter-spacing:-.01em;}
+  .dg-h a.ref{font-family:var(--mono);font-size:11px;color:var(--def);text-decoration:none;border-bottom:1px dotted var(--def);}
+  .dg .cap{font-size:13.5px;color:var(--ink-soft);margin:0 0 12px;}
+
+  .row{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:8px 0;}
+  .row.ctr{justify-content:center;}
+  .col{display:flex;flex-direction:column;gap:9px;}
+  .ar{font-family:var(--mono);font-size:10.5px;letter-spacing:.03em;text-transform:uppercase;color:var(--neu);white-space:nowrap;align-self:center;font-weight:600;}
+  .dn{display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--neu);font-family:var(--mono);font-size:10.5px;text-transform:uppercase;}
+  .dn .t{font-size:16px;color:var(--ink);line-height:.7;}
+  .box{border:1px solid var(--rule);border-radius:10px;padding:12px;background:#fff;}
+  .box .lab{font-family:var(--display);font-weight:700;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--neu);margin-bottom:8px;}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .note{font-size:12.5px;color:var(--ink-soft);margin-top:8px;}
+  .note .mono{font-family:var(--mono);font-size:11.5px;background:var(--paper-2);padding:0 4px;border-radius:3px;}
+  .rr{display:inline-block;font-family:var(--mono);font-size:11px;background:#fff;border:1px solid var(--rule);border-left:3px solid var(--neu);border-radius:5px;padding:4px 8px;}
+  @media(max-width:680px){ .two{grid-template-columns:1fr;} .wrap{padding:0 14px 80px;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="topnav">
+    <a href="index.html">▣ Carte &amp; Legenda</a>
+    <a href="index-immagini.html">◆ Immagini</a>
+    <a href="compendio.html">▤ Compendio AD</a>
+    <a href="diagramma.html">◆ Diagramma di flusso</a>
+    <a class="cur" href="schemi.html">▦ Schemi del modulo</a>
+  </nav>
+
+  <header class="top">
+    <p class="kicker">Gli stessi diagrammi del "Ripasso Completo AD" · resi con gli oggetti-carta</p>
+    <h1>Schemi del modulo</h1>
+    <p>I diagrammi del documento d'esame, ricreati graficamente: ogni <b>nodo</b> è un <b>oggetto-carta</b> (colore = fazione) che rimanda alla sua voce di legenda; le frecce sono i <b>processi/relazioni</b>. <span style="color:var(--def)">Blu</span> = struttura/policy · <span style="color:var(--neu)">Ambra</span> = motore neutro · <span style="color:var(--atk)">Rame</span> = minacce.</p>
+  </header>
+
+  <!-- 1 STRUTTURA -->
+  <section class="dg">
+    <div class="dg-h"><span class="nn">1</span><h2>Struttura logica: Foresta → Alberi → Domini → OU</h2><a class="ref" href="compendio.html#sec-3">Cap. 3</a></div>
+    <p class="cap">Foresta = confine massimo di sicurezza (Schema e Configuration replicate su TUTTI i DC). Trust interni automatici, transitivi e bidirezionali.</p>
+    <div class="row ctr"><a class="mc def" href="index.html#leg-forest"><b>Forest</b><i>confine di sicurezza</i></a></div>
+    <div class="dn"><span class="t">▼</span><span>contiene uno o più Alberi</span></div>
+    <div class="two">
+      <div class="box"><div class="lab">Albero 1 · namespace DNS contiguo</div>
+        <div class="row"><a class="mc def" href="index.html#leg-domain"><b>ifts.local</b><i>Forest Root Domain</i></a></div>
+        <div class="dn"><span class="t">▼</span><span>sottodomini (DNS contiguo)</span></div>
+        <div class="row"><a class="mc def" href="index.html#leg-domain"><b>eu.ifts.local</b><i>Domain</i></a><a class="mc def" href="index.html#leg-domain"><b>it.ifts.local</b><i>Domain</i></a></div>
+        <div class="dn"><span class="t">▼</span><span>contengono</span></div>
+        <div class="row"><a class="mc def" href="index.html#leg-organizational-unit"><b>OU Users</b><i>Organizational Unit</i></a><a class="mc def" href="index.html#leg-organizational-unit"><b>OU Computers</b><i>Organizational Unit</i></a></div>
+      </div>
+      <div class="box"><div class="lab">Albero 2 · namespace DNS diverso (es. acquisizione)</div>
+        <div class="row"><a class="mc def" href="index.html#leg-domain"><b>fav.local</b><i>Tree Root Domain</i></a></div>
+        <div class="dn"><span class="t">▼</span></div>
+        <div class="row"><a class="mc def" href="index.html#leg-domain"><b>sales.fav.local</b><i>Domain</i></a></div>
+        <div class="note">↕ <span class="mono">trust automatico</span> intra-forest tra Albero 1 e Albero 2.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 AUTH/AUTHZ -->
+  <section class="dg">
+    <div class="dg-h"><span class="nn">2</span><h2>Autenticazione (chi sei) → Autorizzazione (cosa puoi fare)</h2><a class="ref" href="compendio.html#sec-6">Cap. 5–6</a></div>
+    <p class="cap">Al logon nasce l'Access Token (SID utente + SID gruppi); viene confrontato con la DACL della risorsa: vince la prima ACE che consente/nega.</p>
+    <div class="box"><div class="lab">Autenticazione</div>
+      <div class="row"><a class="mc neu" href="index.html#leg-user"><b>User</b><i>username + password</i></a><span class="ar">credenziali →</span><a class="mc neu sys" href="index.html#leg-kdc"><b>KDC / Identity store</b><i>verifica</i></a><span class="ar">⇒</span><a class="mc neu" href="index.html#leg-access-token"><b>Access Token</b><i>SID utente + SID gruppi</i></a></div>
+    </div>
+    <div class="dn"><span class="t">▼</span><span>il token è confrontato con i permessi della risorsa</span></div>
+    <div class="box"><div class="lab">Autorizzazione</div>
+      <div class="row"><a class="mc def" href="index.html#leg-resource-share"><b>Resource</b><i>Security Descriptor</i></a><span class="ar">contiene</span><a class="mc def" href="index.html#leg-dacl"><b>DACL</b><i>lista di ACE</i></a><span class="ar">prima ACE</span><a class="mc def" href="index.html#leg-ace-allow"><b>ACE → Allow/Deny</b><i>SID → permesso</i></a></div>
+      <div class="note">In parallelo: <a class="rr" href="index.html#leg-sacl" style="text-decoration:none">SACL = auditing</a> registra gli accessi nei log.</div>
+    </div>
+  </section>
+
+  <!-- 3 SCOPE GRUPPI -->
+  <section class="dg">
+    <div class="dg-h"><span class="nn">3</span><h2>Scope dei gruppi: dove funziona, chi può essere membro</h2><a class="ref" href="compendio.html#s-4-3">Cap. 4.3</a></div>
+    <p class="cap">Local → solo SAM del PC · Domain Local = Rule Group (riceve le ACE) · Global = Role Group (raggruppa per ruolo) · Universal = multi-dominio (replicato su tutti i GC).</p>
+    <div class="row">
+      <a class="mc neu" href="index.html#leg-sam-local"><b>Local (SAM)</b><i>solo quel PC</i></a>
+      <a class="mc def" href="index.html#leg-group-domain-local"><b>Domain Local</b><i>RULE · membri da ogni dominio</i></a>
+      <a class="mc def" href="index.html#leg-group-global"><b>Global</b><i>ROLE · stesso dominio</i></a>
+      <a class="mc def" href="index.html#leg-group-universal"><b>Universal</b><i>foresta · tutti i GC</i></a>
+    </div>
+  </section>
+
+  <!-- 4 IGDLA -->
+  <section class="dg">
+    <div class="dg-h"><span class="nn">4</span><h2>Strategia IGDLA: I → G → DL → A</h2><a class="ref" href="compendio.html#s-4-4">Cap. 4.4</a></div>
+    <p class="cap">Separa "chi sei" (ruolo) da "cosa puoi fare" (regola): le Identità entrano nei Global, annidati nei Domain Local, a cui si assegna l'Access sulla risorsa.</p>
+    <div class="row">
+      <a class="mc def" href="index.html#leg-user"><b>Identities</b><i>User / Computer</i></a><span class="ar">member of →</span>
+      <a class="mc def" href="index.html#leg-group-global"><b>Global</b><i>Role group</i></a><span class="ar">nest →</span>
+      <a class="mc def" href="index.html#leg-group-domain-local"><b>Domain Local</b><i>Rule group</i></a><span class="ar">ACE →</span>
+      <a class="mc def" href="index.html#leg-resource-share"><b>Access</b><i>Resource (ACL)</i></a>
+    </div>
+  </section>
+
+  <!-- 5 LSDOU -->
+  <section class="dg">
+    <div class="dg-h"><span class="nn">5</span><h2>GPO: ereditarietà e precedenza (LSDOU)</h2><a class="ref" href="compendio.html#s-7-3">Cap. 7</a></div>
+    <p class="cap">Ordine di processazione Local → Site → Domain → OU → sotto-OU: l'ultima processata (più vicina all'oggetto) vince. Enforced scavalca Block Inheritance.</p>
+    <div class="row"><a class="mc def" href="index.html#leg-gpo"><b>GPO</b><i>setting · scope · application</i></a></div>
+    <div class="row" style="gap:6px;align-items:stretch;">
+      <span class="rr">1 · Local</span><span class="ar">→</span>
+      <span class="rr">2 · Site</span><span class="ar">→</span>
+      <span class="rr">3 · Domain</span><span class="ar">→</span>
+      <span class="rr">4 · OU</span><span class="ar">→</span>
+      <span class="rr" style="border-left-color:var(--def);">5 · sotto-OU ✓ vince</span>
+    </div>
+    <div class="note"><a class="rr" href="index.html#leg-inheritance" style="text-decoration:none">Block Inheritance</a> (attributo OU) blocca le GPO a monte · <b>Enforced</b> (attributo del link) ha priorità assoluta.</div>
+  </section>
+
+  <!-- 6 LOOPBACK -->
+  <section class="dg">
+    <div class="dg-h"><span class="nn">6</span><h2>Loopback Processing: Replace vs Merge</h2><a class="ref" href="compendio.html#s-7-6">Cap. 7.6</a></div>
+    <p class="cap">Applica agli utenti le impostazioni User contenute nelle GPO del computer (kiosk, sale riunioni, VDI).</p>
+    <div class="two">
+      <div class="box"><div class="lab">Replace</div>
+        <div class="row"><a class="mc def" href="index.html#leg-loopback-processing"><b>GPO Computer</b><i>impostazioni User</i></a></div>
+        <div class="note">GPO Utente <b>IGNORATA</b> → applica SOLO le impostazioni User del computer.</div>
+      </div>
+      <div class="box"><div class="lab">Merge</div>
+        <div class="row"><a class="mc def" href="index.html#leg-loopback-processing"><b>GPO Computer</b><i>impostazioni User</i></a><span class="ar">+</span><a class="mc def" href="index.html#leg-loopback-processing"><b>GPO Utente</b><i>applicata</i></a></div>
+        <div class="note">Combina Computer + Utente; in conflitto <b>vince il Computer</b>.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 FSMO -->
+  <section class="dg">
+    <div class="dg-h"><span class="nn">7</span><h2>Ruoli FSMO: 5 operazioni single-master</h2><a class="ref" href="compendio.html#sec-9">Cap. 9–10</a></div>
+    <p class="cap">2 a livello foresta (1 per foresta) + 3 a livello dominio (1 per dominio). Il FRD detiene inizialmente tutti e 5.</p>
+    <div class="two">
+      <div class="box"><div class="lab">Livello FORESTA · 1 per foresta</div>
+        <div class="row"><a class="mc def" href="index.html#leg-fsmo-schema-master"><b>Schema Master</b><i>modifica lo schema</i></a><a class="mc def" href="index.html#leg-fsmo-domain-naming"><b>Domain Naming</b><i>aggiunge/rimuove domini</i></a></div>
+      </div>
+      <div class="box"><div class="lab">Livello DOMINIO · 1 per dominio</div>
+        <div class="row"><a class="mc def" href="index.html#leg-fsmo-rid-master"><b>RID Master</b><i>pool di RID → SID</i></a><a class="mc def" href="index.html#leg-fsmo-infrastructure"><b>Infrastructure</b><i>membership cross-dominio</i></a><a class="mc def" href="index.html#leg-fsmo-pdc-emulator"><b>PDC Emulator</b><i>password · ora · GPO</i></a></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 DNS -->
+  <section class="dg">
+    <div class="dg-h"><span class="nn">8</span><h2>Gerarchia DNS: Root → TLD → dominio</h2><a class="ref" href="compendio.html#s-5-1">Cap. 9</a></div>
+    <p class="cap">Root (.) → TLD (.com, .it) → secondo livello → sottodomini. I DC registrano i record SRV che i client usano per trovarli.</p>
+    <div class="row ctr"><a class="mc neu" href="index.html#leg-dns-zone"><b>Root "."</b><i>DNS Zone</i></a></div>
+    <div class="dn"><span class="t">▼</span></div>
+    <div class="row ctr"><a class="mc neu" href="index.html#leg-dns-zone"><b>.com</b><i>TLD</i></a><a class="mc neu" href="index.html#leg-dns-zone"><b>.it</b><i>TLD</i></a></div>
+    <div class="dn"><span class="t">▼</span></div>
+    <div class="row ctr"><a class="mc neu" href="index.html#leg-dns-zone"><b>contoso.com</b><i>2° livello</i></a><a class="mc neu" href="index.html#leg-dns-zone"><b>ifts.it</b><i>2° livello</i></a></div>
+    <div class="note" style="margin-top:12px;">Resource Record:
+      <a class="rr" href="index.html#leg-resource-record" style="text-decoration:none">A/AAAA</a>
+      <a class="rr" href="index.html#leg-resource-record" style="text-decoration:none">CNAME</a>
+      <a class="rr" href="index.html#leg-resource-record" style="text-decoration:none">MX</a>
+      <a class="rr" href="index.html#leg-resource-record" style="text-decoration:none">NS</a>
+      <a class="rr" href="index.html#leg-resource-record" style="text-decoration:none">PTR</a>
+      <a class="rr" href="index.html#leg-resource-record" style="text-decoration:none;border-left-color:var(--def);">SRV → trova i DC</a>
+      · <a class="rr" href="index.html#leg-reverse-lookup-zone" style="text-decoration:none">Reverse (in-addr.arpa)</a>
+      · <a class="rr" href="index.html#leg-forwarder" style="text-decoration:none">Forwarder</a>
+    </div>
+  </section>
+
+  <!-- 9 SITI E REPLICHE -->
+  <section class="dg" style="border-bottom:none;">
+    <div class="dg-h"><span class="nn">9</span><h2>Siti e repliche: intrasite vs intersite</h2><a class="ref" href="compendio.html#sec-8">Cap. 11</a></div>
+    <p class="cap">Intrasite (LAN): KCC, ~15 s, non compressa, max 3 hop. Intersite (WAN): Site Link (ISTG + bridgehead), compressa, basata sul costo, schedulata.</p>
+    <div class="two">
+      <div class="box"><div class="lab">Sito A (LAN) · KCC intrasite</div>
+        <div class="row"><a class="mc def" href="index.html#leg-domain-controller"><b>DC1</b><i>Domain Controller</i></a><a class="mc def" href="index.html#leg-domain-controller"><b>DC2</b><i>Domain Controller</i></a><a class="mc def" href="index.html#leg-domain-controller"><b>DC3</b><i>Domain Controller</i></a></div>
+        <div class="note"><a class="rr" href="index.html#leg-kcc" style="text-decoration:none">KCC</a> genera la topologia · ~15 s · max 3 hop</div>
+      </div>
+      <div class="box"><div class="lab">Sito B (LAN)</div>
+        <div class="row"><a class="mc def" href="index.html#leg-domain-controller"><b>DC4</b><i>Domain Controller</i></a><a class="mc def" href="index.html#leg-domain-controller"><b>DC5</b><i>Domain Controller</i></a></div>
+      </div>
+    </div>
+    <div class="row ctr" style="margin-top:12px;">
+      <a class="mc def" href="index.html#leg-istg-bridgehead"><b>Bridgehead</b><i>Sito A</i></a>
+      <span class="ar">◄ Site Link ►</span>
+      <a class="mc def" href="index.html#leg-site-link"><b>Site Link (ISTG)</b><i>compressa · costo · schedulata</i></a>
+      <span class="ar">◄ ►</span>
+      <a class="mc def" href="index.html#leg-istg-bridgehead"><b>Bridgehead</b><i>Sito B</i></a>
+    </div>
+  </section>
+
+  <footer style="margin-top:34px;padding-top:16px;border-top:3px solid var(--ink);font-family:var(--mono);font-size:12px;color:var(--neu);line-height:1.7;">
+    Schemi ricreati dal "Ripasso Completo AD" (modulo Bernabei). Ogni nodo è un oggetto-carta → clicca per la voce di legenda.
+  </footer>
+
+</div>
+</body>
+</html>

@@ -129,7 +129,21 @@ const CARDS=[
 {n:"Silver Ticket",fac:"atk",cost:"1",ty:"Tecnica · Persist",cls:"THREAT",rel:"chiave di servizio"+A+"Forge [TGS].",kw:["FORGE"]},
 {n:"SID History Inject",fac:"atk",cost:"2",ty:"Tecnica · Persist",cls:"THREAT",rel:"inietta [SID] privilegiato nel Token.",kw:["TOKEN","PERSIST"]},
 {n:"Malicious GPO",fac:"atk",cost:"2",ty:"Tecnica · Esc",cls:"THREAT",rel:"WriteDACL su [GPO]"+A+"Link malevolo all'[OU].",kw:["LINK","ESCALATE"]},
-{n:"AdminSDHolder",fac:"atk",cost:"2",ty:"Tecnica · Persist",cls:"THREAT",rel:"persistenza sui [Privileged Group].",kw:["PERSIST"]}
+{n:"AdminSDHolder",fac:"atk",cost:"2",ty:"Tecnica · Persist",cls:"THREAT",rel:"persistenza sui [Privileged Group].",kw:["PERSIST"]},
+
+// --- Integrazione terminologia dal "Ripasso Completo AD" (modulo Bernabei) ---
+{n:"SAM (local)",fac:"neu",cost:"S",ty:"Stato",cls:"IDENTITY",rel:"DB utenti locale del PC (workgroup); su [Domain Controller] viene rimosso.",kw:["LOGON"]},
+{n:"Secure Channel",fac:"def",cost:"S",ty:"Stato",cls:"IDENTITY",rel:"canale sicuro [Computer]"+A+"[Domain Controller]; se rotto serve nuova join.",kw:[]},
+{n:"Distinguished Name",fac:"neu",cost:"S",ty:"Stato",cls:"DIRECTORY",rel:"indirizzo univoco dell'oggetto nell'albero (cn / ou / dc).",kw:[]},
+{n:"Application Partition",fac:"def",cost:"S",ty:"Partizione",cls:"DIRECTORY",rel:"partizione a replica personalizzabile; es. zone [DNS / SRV] integrate in AD.",kw:["REPLICATE"]},
+{n:"Forest Trust",fac:"neu",cost:"2",ty:"Power",cls:"DIRECTORY",rel:"trust manuale tra due [Forest]; richiede DNS reciproco.",kw:["TRUST"]},
+{n:"Shortcut Trust",fac:"neu",cost:"1",ty:"Power",cls:"DIRECTORY",rel:"trust interno alla [Forest]; accorcia il cammino tra [Domain] lontani.",kw:["TRUST","TRAVERSE"]},
+{n:"GPT (SYSVOL)",fac:"def",cost:"S",ty:"Oggetto",cls:"POLICY",rel:"parte file della [GPO] in [SYSVOL]; Replicate (DFS-R).",kw:["REPLICATE"]},
+{n:"DSRM",fac:"def",cost:"S",ty:"Operazione",cls:"TOPOLOGY",rel:"avvio offline del DC per il restore; abilita [Authoritative Restore].",kw:["RESTORE / RECYCLE"]},
+{n:"DNS Zone",fac:"neu",cost:"S",ty:"Oggetto",cls:"PROTOCOL",rel:"DB autoritativo di una porzione DNS; può essere AD-integrated.",kw:["REPLICATE"]},
+{n:"Resource Record",fac:"neu",cost:"S",ty:"Stato",cls:"PROTOCOL",rel:"voce di una [DNS Zone]: A/AAAA, CNAME, MX, NS, PTR, SRV.",kw:[]},
+{n:"Reverse Lookup Zone",fac:"neu",cost:"S",ty:"Oggetto",cls:"PROTOCOL",rel:"risolve IP"+A+"nome via record PTR in in-addr.arpa.",kw:[]},
+{n:"Forwarder",fac:"neu",cost:"S",ty:"Operazione",cls:"PROTOCOL",rel:"inoltra query non risolte a [DNS / SRV] esterno; conditional = domini scelti.",kw:[]}
 ];
 
 const INFO={
@@ -224,7 +238,20 @@ const INFO={
 "Silver Ticket":{r:"[Tecnica d'attacco] Con l'hash di un account di servizio si forgia un TGS per quel servizio, bypassando il KDC. Difesa: password di servizio forti, monitoraggio degli accessi.",g:"FORGE del TGS."},
 "SID History Inject":{r:"[Tecnica d'attacco] Si inserisce un SID privilegiato nell'attributo SID History di un account per ereditarne i diritti nel token. Difesa: SID filtering sui trust.",g:"Inietta un SID nel TOKEN; PERSIST."},
 "Malicious GPO":{r:"[Tecnica d'attacco] Con WriteDACL su una GPO collegata (es. all'OU dei DC) si inseriscono impostazioni malevole applicate a tutti gli oggetti nello scope. Difesa: delega rigorosa e auditing delle GPO.",g:"LINK malevolo → ESCALATE."},
-"AdminSDHolder":{r:"[Tecnica d'attacco] Oggetto che, tramite il processo SDProp, reimposta periodicamente le ACL dei gruppi protetti; abusato per ristabilire accessi nascosti (persistenza). Difesa: monitorare AdminSDHolder e i gruppi protetti.",g:"PERSIST sui Privileged Group."}
+"AdminSDHolder":{r:"[Tecnica d'attacco] Oggetto che, tramite il processo SDProp, reimposta periodicamente le ACL dei gruppi protetti; abusato per ristabilire accessi nascosti (persistenza). Difesa: monitorare AdminSDHolder e i gruppi protetti.",g:"PERSIST sui Privileged Group."},
+
+"SAM (local)":{r:"Security Accounts Manager: il database utenti LOCALE di ogni PC/server in workgroup. In un workgroup ogni macchina ha il proprio SAM e i propri account: nessuna autenticazione centralizzata (con 10 PC crei l'utente su tutti e 10). Promuovendo un server a Domain Controller il SAM locale viene rimosso.",c:"lusrmgr.msc · gruppi locali",g:"È l'opposto del LOGON di dominio: identità non condivisa."},
+"Secure Channel":{r:"Canale sicuro tra l'account [Computer] e un DC, basato sulla password del computer (cambiata periodicamente). Se si corrompe (reinstallazione, restore da backup, snapshot) compare «La relazione di trust tra questa workstation e il dominio primario non è riuscita» e serve una nuova join.",c:"Test-ComputerSecureChannel -Repair · netdom resetpwd",g:"Prerequisito del LOGON del computer al dominio."},
+"Distinguished Name":{r:"Distinguished Name: il percorso univoco che identifica un oggetto nell'albero AD, es. cn=Mario Rossi,ou=Users,dc=ifts,dc=local (cn = Common Name, ou = Organizational Unit, dc = Domain Component). È ciò che restituisce dsquery; altri identificatori: objectGUID (immutabile), objectSid.",c:"dsquery · Get-ADObject",g:"L'indirizzo di posizione di ogni elemento."},
+"Application Partition":{r:"Partizione applicativa di AD con ambito di replica personalizzabile (non i confini standard di dominio/foresta). Uso tipico: le zone DNS integrate in AD — DomainDnsZones (replicata ai DC del dominio) e ForestDnsZones (a tutti i DC della foresta).",g:"REPLICATE con scope su misura."},
+"Forest Trust":{r:"Relazione di trust tra DUE foreste distinte, creata manualmente. Requisiti: DNS risolvibili reciprocamente e account amministrativi su entrambe. Consente autenticazione/autorizzazione cross-forest; il SID filtering protegge da SID History injection.",c:"Active Directory Domains and Trusts · netdom trust",g:"Apre l'arco TRUST tra foreste."},
+"Shortcut Trust":{r:"Trust manuale interno alla stessa foresta che crea una «scorciatoia» tra due domini lontani nell'albero, velocizzando l'autenticazione (evita di risalire e ridiscendere la catena dei trust transitivi).",c:"Active Directory Domains and Trusts",g:"Accorcia il cammino TRUST/TRAVERSE."},
+"GPT (SYSVOL)":{r:"Group Policy Template: la componente «file» di una GPO, salvata in SYSVOL (\\\\dominio\\SYSVOL\\dominio\\Policies\\{GUID}) con GPT.INI (versione), cartelle Machine/User e script. La componente «AD» è il GPC nel Domain NC. Si replica con SYSVOL via DFS-R.",g:"REPLICATE della GPO lato file."},
+"DSRM":{r:"Directory Services Restore Mode: modalità di avvio speciale del DC (F8 oppure bcdedit /set safeboot dsrepair) con AD offline, per ripristinare il database. Usa la password DSRM impostata alla promozione del DC. È il contesto in cui si esegue il restore, incluso l'authoritative con ntdsutil.",c:"bcdedit /set safeboot dsrepair · ntdsutil",g:"Abilita RESTORE/RECYCLE in sicurezza."},
+"DNS Zone":{r:"Zona DNS: il database che risolve i nomi di una porzione dello spazio DNS; il server che la detiene è «autoritativo» per quel dominio. Tipi: primaria, secondaria (copia read-only), stub (solo record NS). Le zone AD-integrated stanno nel database AD con replica personalizzabile.",c:"DNS Manager · dnscmd",g:"Contiene i Resource Record che il motore usa."},
+"Resource Record":{r:"Resource Record: una voce della zona DNS. Principali: A/AAAA (nome→IP), CNAME (alias), MX (mail), NS (DNS autoritativo), PTR (IP→nome, reverse), SRV (Service Locator: i client lo usano per trovare i DC).",c:"nslookup · Resolve-DnsName",g:"Il record SRV è prerequisito del LOGON."},
+"Reverse Lookup Zone":{r:"Zona di ricerca inversa: risolve un IP nel nome (il contrario del normale). L'IP è salvato «a ritroso» nel dominio speciale in-addr.arpa (es. 10.0.1.34 → 34.1.0.10.in-addr.arpa) tramite record PTR. Non obbligatoria ma raccomandata.",c:"nslookup -type=PTR",g:"Supporto diagnostico al motore DNS."},
+"Forwarder":{r:"Forwarder: inoltra le query DNS non risolte a un server esterno (es. ISP). Il conditional forwarder fa lo stesso ma solo per domini specifici. Alternativa: root hints (query iterative a partire dai server root).",c:"DNS Manager → Forwarders",g:"Estende la risoluzione DNS oltre la zona locale."}
 };
 
 // KW_INFO — significato reale (fuori dal gioco) di ogni parola-chiave meccanica.
@@ -307,7 +334,11 @@ const TERM_REF={
 "NTLM Relay":["12.2","5.6"],"Pass-the-Hash":["12.4"],"Pass-the-Ticket":["12.4"],
 "Abuse GenericAll":["12.3"],"AddMember Abuse":["12.3","6.2"],"Token Theft":["12.4"],
 "DCSync":["12.5"],"Golden Ticket":["12.5","13.4"],"Silver Ticket":["12.5"],
-"SID History Inject":["12.5","11.3"],"Malicious GPO":["12.3","7.2"],"AdminSDHolder":["12.5"]
+"SID History Inject":["12.5","11.3"],"Malicious GPO":["12.3","7.2"],"AdminSDHolder":["12.5"],
+"SAM (local)":["4.1","1.1"],"Secure Channel":["4.1","5.1"],"Distinguished Name":["2.2"],
+"Application Partition":["3.3"],"Forest Trust":["11.2"],"Shortcut Trust":["11.1"],
+"GPT (SYSVOL)":["7.1","8.3"],"DSRM":["10.2"],"DNS Zone":["5.1"],"Resource Record":["5.1"],
+"Reverse Lookup Zone":["5.1"],"Forwarder":["5.1"]
 };
 
 // Riferimento per keyword (meccanica) → sezioni del compendio

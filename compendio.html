@@ -99,6 +99,14 @@
   table.tbl th{font-family:var(--display); font-size:11px; letter-spacing:.08em; text-transform:uppercase; background:var(--paper-2);}
   table.tbl td .mono{font-size:12.5px;}
 
+  /* blocco comando + spiegazione delle particelle */
+  .cmd{background:#11141b; border:1px solid var(--rule); border-radius:8px; padding:11px 13px; margin:9px 0 12px;}
+  .cmd .lab{font-family:var(--display); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:#8a93a6; margin-bottom:4px;}
+  .cmd .cl{font-family:var(--mono); font-size:12.5px; color:#cfe3ff; white-space:pre-wrap; word-break:break-word; display:block; margin-top:5px;}
+  .cmd .pl{margin:6px 0 2px; padding-left:0; list-style:none;}
+  .cmd .pl li{font-family:var(--body); font-size:13px; color:#c7ccd6; margin:3px 0;}
+  .cmd .pl code{font-family:var(--mono); font-size:11.5px; color:#e8c9a0; background:#1c2130; padding:1px 5px; border-radius:3px;}
+
   hr.heavy{border:none; border-top:3px solid var(--ink); margin:0;}
 
   @media (max-width:760px){
@@ -270,7 +278,18 @@
       <p class="lede">Gli oggetti che diventeranno SID nel token. Il modo in cui sono organizzati determina quali archi esisteranno.</p>
 
       <div class="secsub" id="s-4-1"><span class="sn">4.1</span> Account User e Computer</div>
-      <div class="rule"><div class="rn" id="r-4-1-1">4.1.1</div><div class="rt"><p><b>User</b> e <b>Computer</b> sono security principal con SID. Al logon generano un Access Token <span class="xref">→ 6.1</span>. Il computer unito al dominio stabilisce una relazione di trust con AD ed è gestito centralmente.</p></div></div>
+      <div class="rule"><div class="rn" id="r-4-1-1">4.1.1</div><div class="rt"><p><b>User</b> e <b>Computer</b> sono security principal con SID. Al logon generano un Access Token <span class="xref">→ 6.1</span>. Il computer unito al dominio stabilisce una relazione di trust con AD ed è gestito centralmente.</p>
+        <div class="cmd"><div class="lab">Comando · particelle</div>
+          <span class="cl">New-ADUser -Name "Mario Rossi" -SamAccountName MRossi -UserPrincipalName MRossi@ifts.local -Path "OU=Users,DC=ifts,DC=local" -AccountPassword (ConvertTo-SecureString "Passw0rd" -AsPlainText -Force) -Enabled $true</span>
+          <ul class="pl">
+            <li><code>New-ADUser</code> cmdlet che crea l'account</li>
+            <li><code>-Name</code> nome visualizzato (CN) · <code>-SamAccountName</code> logon pre-2000 (IFTS\MRossi) · <code>-UserPrincipalName</code> logon stile email</li>
+            <li><code>-Path</code> DN della OU che lo contiene</li>
+            <li><code>-AccountPassword (ConvertTo-SecureString …)</code> password convertita in SecureString · <code>-Enabled $true</code> account attivo</li>
+          </ul>
+          <span class="cl">dsadd user "CN=Mario Rossi,OU=Users,DC=ifts,DC=local" -pwd Pass123 -mustchpwd yes</span>
+          <ul class="pl"><li><code>dsadd user</code> crea l'utente da riga di comando · <code>-mustchpwd yes</code> cambio password al primo logon</li></ul>
+        </div></div></div>
 
       <div class="secsub" id="s-4-2"><span class="sn">4.2</span> Tipo: Security vs Distribution</div>
       <div class="rule"><div class="rn" id="r-4-2-1">4.2.1</div><div class="rt"><p>Solo i gruppi <b>Security</b> hanno un SID e finiscono nel token: sono gli unici che concedono accesso. I gruppi <b>Distribution</b> servono solo a liste email e non incidono sull'autorizzazione.</p></div></div>
@@ -283,7 +302,13 @@
         <tr><td><b>Universal</b></td><td>qualsiasi dominio (nel GC)</td><td>foreste multi-dominio <span class="xref">→ 3.3</span></td></tr></table></div></div>
 
       <div class="secsub" id="s-4-4"><span class="sn">4.4</span> IGDLA — ordine di annidamento</div>
-      <div class="rule"><div class="rn" id="r-4-4-1">4.4.1</div><div class="rt"><p>La catena corretta è <b>I → G → DL → A</b>: l'<b>Identità</b> entra in un gruppo <b>Global</b> (ruolo), il Global si annida in un <b>Domain Local</b> (regola), il Domain Local riceve l'<b>Access</b> (la ACE) sulla risorsa.</p></div></div>
+      <div class="rule"><div class="rn" id="r-4-4-1">4.4.1</div><div class="rt"><p>La catena corretta è <b>I → G → DL → A</b>: l'<b>Identità</b> entra in un gruppo <b>Global</b> (ruolo), il Global si annida in un <b>Domain Local</b> (regola), il Domain Local riceve l'<b>Access</b> (la ACE) sulla risorsa.</p>
+        <div class="cmd"><div class="lab">Comando · particelle</div>
+          <span class="cl">New-ADGroup -Name "GG-Vendite" -GroupScope Global -GroupCategory Security -Path "OU=Groups,DC=ifts,DC=local"</span>
+          <ul class="pl"><li><code>-GroupScope</code> ambito: Global (ruolo) / DomainLocal (regola) / Universal · <code>-GroupCategory Security</code> tipo con SID (può ricevere permessi)</li></ul>
+          <span class="cl">Add-ADGroupMember -Identity "DL-Risorse" -Members "GG-Vendite"</span>
+          <ul class="pl"><li><code>-Identity</code> gruppo destinatario · <code>-Members</code> membri da annidare (catena I → G → DL)</li></ul>
+        </div></div></div>
       <div class="rule"><div class="rn" id="r-4-4-2">4.4.2</div><div class="rt"><p>Separare «chi sei» (Global) da «cosa puoi fare» (Domain Local) rende gli accessi puliti e pochi. Le scorciatoie (ACE diretta a un utente, utenti in un Domain Local) creano archi sfruttabili <span class="xref">→ 12.3</span>.</p></div></div>
 
       <div class="secsub" id="s-4-5"><span class="sn">4.5</span> Gruppi privilegiati e Special Identities</div>
@@ -306,7 +331,13 @@
       <p class="lede">«Chi sei». Una sequenza precisa: trovare il DC, provare l'identità, ottenere i ticket. Solo dopo si parla di permessi.</p>
 
       <div class="secsub" id="s-5-1"><span class="sn">5.1</span> Prerequisito: DNS/SRV individua il DC</div>
-      <div class="rule"><div class="rn" id="r-5-1-1">5.1.1</div><div class="rt"><p>Il client interroga il <b>DNS</b> per i record <b>SRV</b> e individua un DC del proprio Site. Senza risoluzione DNS non c'è logon di dominio: è il passo zero di ogni autenticazione.</p></div></div>
+      <div class="rule"><div class="rn" id="r-5-1-1">5.1.1</div><div class="rt"><p>Il client interroga il <b>DNS</b> per i record <b>SRV</b> e individua un DC del proprio Site. Senza risoluzione DNS non c'è logon di dominio: è il passo zero di ogni autenticazione.</p>
+        <div class="cmd"><div class="lab">Comando · particelle</div>
+          <span class="cl">nslookup -type=SRV _ldap._tcp.dc._msdcs.ifts.local</span>
+          <ul class="pl"><li><code>-type=SRV</code> interroga i record Service Locator dei DC (query diretta al DNS, senza cache)</li></ul>
+          <span class="cl">ipconfig /flushdns · ipconfig /registerdns · dcdiag /test:DNS</span>
+          <ul class="pl"><li><code>/flushdns</code> svuota la cache · <code>/registerdns</code> ri-registra il record del client · <code>dcdiag /test:DNS</code> diagnostica lato DC</li></ul>
+        </div></div></div>
 
       <div class="secsub" id="s-5-2"><span class="sn">5.2</span> Logon e credenziali</div>
       <div class="rule"><div class="rn" id="r-5-2-1">5.2.1</div><div class="rt"><p>Al <b>logon</b> la LSA raccoglie le credenziali e avvia l'autenticazione (Kerberos se disponibile, NTLM come fallback <span class="xref">→ 5.6</span>). Esito riuscito → si costruirà il token <span class="xref">→ 6.1</span>.</p></div></div>
@@ -344,7 +375,11 @@
       <p class="lede">«Cosa puoi fare». Costruito il token, ogni accesso è un confronto fra i SID del token e la DACL della risorsa.</p>
 
       <div class="secsub" id="s-6-1"><span class="sn">6.1</span> Costruzione dell'Access Token</div>
-      <div class="rule"><div class="rn" id="r-6-1-1">6.1.1</div><div class="rt"><p>Al logon, l'<b>Access Token</b> si compone con: <b>SID dell'utente + SID di ogni gruppo</b> di cui è membro (catena IGDLA <span class="xref">→ 4.4</span>) + privilegi + Special Identities.</p></div></div>
+      <div class="rule"><div class="rn" id="r-6-1-1">6.1.1</div><div class="rt"><p>Al logon, l'<b>Access Token</b> si compone con: <b>SID dell'utente + SID di ogni gruppo</b> di cui è membro (catena IGDLA <span class="xref">→ 4.4</span>) + privilegi + Special Identities.</p>
+        <div class="cmd"><div class="lab">Comando · particelle</div>
+          <span class="cl">whoami /all</span>
+          <ul class="pl"><li><code>whoami</code> mostra l'identità corrente · <code>/all</code> stampa SID utente, SID dei gruppi del token e privilegi</li></ul>
+        </div></div></div>
 
       <div class="secsub" id="s-6-2"><span class="sn">6.2</span> Aggiornamento del token</div>
       <div class="rule"><div class="rn" id="r-6-2-1">6.2.1</div><div class="rt"><p>Il token <b>non si aggiorna da solo</b>: aggiungere un utente a un gruppo non ha effetto finché non esegue un <b>nuovo logon</b> che rigenera il token con i nuovi SID.</p>
@@ -394,7 +429,13 @@
       <div class="rule"><div class="rn" id="r-7-5-1">7.5.1</div><div class="rt"><p><b>Security Filtering</b>: applica la GPO solo ai membri di un gruppo (permessi «Apply Group Policy» + «Read»). <b>WMI Filtering</b>: applica in base a caratteristiche del client (RAM, OS) via query WMI.</p></div></div>
 
       <div class="secsub" id="s-7-6"><span class="sn">7.6</span> RSoP, CSE e refresh</div>
-      <div class="rule"><div class="rn" id="r-7-6-1">7.6.1</div><div class="rt"><p>Le <b>CSE</b> sul client applicano le impostazioni ricevute (modello «pull», refresh ~90–120 min; <span class="mono">gpupdate</span> forza). L'<b>RSoP</b> calcola l'effetto netto cumulativo (<span class="mono">gpresult</span>, <span class="mono">rsop.msc</span>).</p></div></div>
+      <div class="rule"><div class="rn" id="r-7-6-1">7.6.1</div><div class="rt"><p>Le <b>CSE</b> sul client applicano le impostazioni ricevute (modello «pull», refresh ~90–120 min; <span class="mono">gpupdate</span> forza). L'<b>RSoP</b> calcola l'effetto netto cumulativo (<span class="mono">gpresult</span>, <span class="mono">rsop.msc</span>).</p>
+        <div class="cmd"><div class="lab">Comando · particelle</div>
+          <span class="cl">gpupdate /force</span>
+          <ul class="pl"><li><code>/force</code> riapplica TUTTE le policy, non solo quelle cambiate</li></ul>
+          <span class="cl">gpresult /r · gpresult /s PC /h report.html</span>
+          <ul class="pl"><li><code>/r</code> riepilogo RSoP a console · <code>/s</code> PC remoto · <code>/h</code> report HTML</li></ul>
+        </div></div></div>
       <div class="rule"><div class="rn" id="r-7-6-2">7.6.2</div><div class="rt"><p><b>Loopback Processing</b> applica all'utente le policy del computer su cui accede (Merge/Replace): tipico per kiosk e terminal server.</p></div></div>
 
       <div class="secsub" id="s-7-7"><span class="sn">7.7</span> Policy predefinite e PSO</div>
@@ -422,7 +463,15 @@
       <div class="rule"><div class="rn" id="r-8-1-2">8.1.2</div><div class="rt"><p>La ridondanza richiede ≥2 DC per dominio: garantisce continuità di KDC, GPO, DNS e SYSVOL. Le finestre di incoerenza durante la propagazione sono reali e vanno considerate <span class="xref">→ 6.2</span>.</p></div></div>
 
       <div class="secsub" id="s-8-2"><span class="sn">8.2</span> Intra-site e inter-site</div>
-      <div class="rule"><div class="rn" id="r-8-2-1">8.2.1</div><div class="rt"><p>Il <b>KCC</b> disegna automaticamente la topologia <b>intra-sito</b> (replica entro ~15 s dalla notifica). L'<b>ISTG</b> genera le connessioni <b>inter-sito</b> tramite Bridgehead, secondo costo/intervallo dei Site Link <span class="xref">→ 3.5</span>.</p></div></div>
+      <div class="rule"><div class="rn" id="r-8-2-1">8.2.1</div><div class="rt"><p>Il <b>KCC</b> disegna automaticamente la topologia <b>intra-sito</b> (replica entro ~15 s dalla notifica). L'<b>ISTG</b> genera le connessioni <b>inter-sito</b> tramite Bridgehead, secondo costo/intervallo dei Site Link <span class="xref">→ 3.5</span>.</p>
+        <div class="cmd"><div class="lab">Comando · particelle</div>
+          <span class="cl">repadmin /showrepl · repadmin /syncall DC01 /A /e · repadmin /kcc</span>
+          <ul class="pl">
+            <li><code>/showrepl</code> stato delle repliche del DC</li>
+            <li><code>/syncall</code> sincronizza · <code>/A</code> tutte le partizioni · <code>/e</code> anche cross-site (enterprise)</li>
+            <li><code>/kcc</code> forza il ricalcolo della topologia (KCC)</li>
+          </ul>
+        </div></div></div>
 
       <div class="secsub" id="s-8-3"><span class="sn">8.3</span> SYSVOL: DFS-R e FRS</div>
       <div class="rule"><div class="rn" id="r-8-3-1">8.3.1</div><div class="rt"><p><b>SYSVOL</b> (script di logon, GPO) si replica con <b>DFS-R</b>, che sostituisce il legacy <b>FRS</b>; la migrazione FRS→DFS-R è irreversibile.</p></div></div>
@@ -451,7 +500,15 @@
 
       <div class="secsub" id="s-9-2"><span class="sn">9.2</span> Transfer e Seize</div>
       <div class="rule"><div class="rn" id="r-9-2-1">9.2.1</div><div class="rt"><p><b>Transfer</b> (DC online) per manutenzione/bilanciamento; <b>Seize</b> (DC irraggiungibile) come emergenza.</p>
-        <ol class="sub"><li>Dopo un seize di <b>Schema / Domain Naming / RID</b> il vecchio DC non deve tornare online (rischio di SID/oggetti duplicati).</li><li><b>PDC Emulator</b> e <b>Infrastructure</b> possono rientrare senza rischi.</li></ol></div></div>
+        <ol class="sub"><li>Dopo un seize di <b>Schema / Domain Naming / RID</b> il vecchio DC non deve tornare online (rischio di SID/oggetti duplicati).</li><li><b>PDC Emulator</b> e <b>Infrastructure</b> possono rientrare senza rischi.</li></ol>
+        <div class="cmd"><div class="lab">Comando · particelle</div>
+          <span class="cl">netdom query fsmo</span>
+          <ul class="pl"><li>elenca quale DC detiene ciascuno dei 5 ruoli</li></ul>
+          <span class="cl">Move-ADDirectoryServerOperationMasterRole -Identity DC01 -OperationMasterRole PDCEmulator,RIDMaster</span>
+          <ul class="pl"><li><code>-Identity</code> DC che riceverà i ruoli · <code>-OperationMasterRole</code> ruoli da trasferire (Transfer)</li></ul>
+          <span class="cl">ntdsutil → roles → connections → seize pdc</span>
+          <ul class="pl"><li><code>seize</code> forzatura quando il detentore è irraggiungibile (col cmdlet: aggiungi <code>-Force</code>)</li></ul>
+        </div></div></div>
     </div>
   </section>
 
@@ -470,10 +527,18 @@
 
       <div class="secsub" id="s-10-2"><span class="sn">10.2</span> Restore: non-authoritative e authoritative</div>
       <div class="rule"><div class="rn" id="r-10-2-1">10.2.1</div><div class="rt"><p><b>Non-authoritative</b>: il DC si ripristina da backup e poi riceve via replica le modifiche più recenti — il ripristino «normale» di un DC.</p></div></div>
-      <div class="rule"><div class="rn" id="r-10-2-2">10.2.2</div><div class="rt"><p><b>Authoritative</b> (<span class="mono">ntdsutil</span>): marca gli oggetti ripristinati con version number elevato così che <b>vincano</b> sulla replica e si propaghino agli altri DC — per recuperare oggetti cancellati prima del Recycle Bin.</p></div></div>
+      <div class="rule"><div class="rn" id="r-10-2-2">10.2.2</div><div class="rt"><p><b>Authoritative</b> (<span class="mono">ntdsutil</span>): marca gli oggetti ripristinati con version number elevato così che <b>vincano</b> sulla replica e si propaghino agli altri DC — per recuperare oggetti cancellati prima del Recycle Bin.</p>
+        <div class="cmd"><div class="lab">Comando · particelle</div>
+          <span class="cl">ntdsutil → activate instance ntds → authoritative restore → restore subtree "OU=Users,DC=ifts,DC=local"</span>
+          <ul class="pl"><li><code>restore subtree "DN"</code> marca il ramo con un version number alto → vince sulla replica e si ripropaga sugli altri DC</li></ul>
+        </div></div></div>
 
       <div class="secsub" id="s-10-3"><span class="sn">10.3</span> Recycle Bin</div>
-      <div class="rule"><div class="rn" id="r-10-3-1">10.3.1</div><div class="rt"><p>L'<b>AD Recycle Bin</b>, una volta abilitato, ripristina oggetti eliminati con tutti gli attributi, senza downtime (Deleted Objects).</p></div></div>
+      <div class="rule"><div class="rn" id="r-10-3-1">10.3.1</div><div class="rt"><p>L'<b>AD Recycle Bin</b>, una volta abilitato, ripristina oggetti eliminati con tutti gli attributi, senza downtime (Deleted Objects).</p>
+        <div class="cmd"><div class="lab">Comando · particelle</div>
+          <span class="cl">Enable-ADOptionalFeature "Recycle Bin Feature" -Scope ForestOrConfigurationSet -Target "ifts.local"</span>
+          <ul class="pl"><li><code>-Scope ForestOrConfigurationSet</code> ambito foresta · <code>-Target</code> la foresta · richiede DFL ≥ 2008 R2 e una volta attivo NON si disattiva</li></ul>
+        </div></div></div>
 
       <div class="secsub" id="s-10-4"><span class="sn">10.4</span> Functional Level</div>
       <div class="rule"><div class="rn" id="r-10-4-1">10.4.1</div><div class="rt"><p>Il <b>Functional Level</b> abilita funzionalità e vincola la versione minima dei DC. Il livello di dominio può essere ≥ del livello di foresta, mai inferiore; l'innalzamento è <b>irreversibile</b>.</p></div></div>
@@ -494,7 +559,11 @@
       <div class="rule"><div class="rn" id="r-11-1-1">11.1.1</div><div class="rt"><p>Dentro una foresta le trust sono <b>automatiche, transitive e bidirezionali</b>: tutti i domini si fidano reciprocamente.</p></div></div>
 
       <div class="secsub" id="s-11-2"><span class="sn">11.2</span> Trust inter-forest</div>
-      <div class="rule"><div class="rn" id="r-11-2-1">11.2.1</div><div class="rt"><p>Tra foreste le trust sono <b>manuali</b>, per default non transitive, e richiedono risoluzione DNS reciproca. Possono essere one-way o two-way.</p></div></div>
+      <div class="rule"><div class="rn" id="r-11-2-1">11.2.1</div><div class="rt"><p>Tra foreste le trust sono <b>manuali</b>, per default non transitive, e richiedono risoluzione DNS reciproca. Possono essere one-way o two-way.</p>
+        <div class="cmd"><div class="lab">Comando · particelle</div>
+          <span class="cl">netdom trust ifts.local /domain:fav.local /add /twoway /verify</span>
+          <ul class="pl"><li><code>/domain</code> la controparte del trust · <code>/add</code> crea · <code>/twoway</code> bidirezionale · <code>/verify</code> verifica · <code>/remove</code> elimina</li></ul>
+        </div></div></div>
 
       <div class="secsub" id="s-11-3"><span class="sn">11.3</span> SID filtering</div>
       <div class="rule"><div class="rn" id="r-11-3-1">11.3.1</div><div class="rt"><p>Il <b>SID filtering</b> sulle trust inter-forest scarta i SID non appartenenti al dominio d'origine, proteggendo da SID History injection cross-forest <span class="xref">→ 12.5</span>.</p></div></div>

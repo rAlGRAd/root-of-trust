@@ -64,6 +64,11 @@
     position:relative;height:132px;overflow:hidden;flex-shrink:0;
     background:linear-gradient(145deg,var(--fd) 0%,color-mix(in srgb,var(--fc) 52%,#000) 100%);
   }
+  /* network image per card + faction tint for readability */
+  .c-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:.92;}
+  .c-img.broken{opacity:0;}
+  .c-art-tint{position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:multiply;
+    background:linear-gradient(160deg,color-mix(in srgb,var(--fd) 28%,transparent),color-mix(in srgb,var(--fc) 48%,transparent));}
   .c-art::after{/* diagonal stripe texture */
     content:'';position:absolute;inset:0;
     background:repeating-linear-gradient(-45deg,transparent 0,transparent 5px,rgba(255,255,255,.018) 5px,rgba(255,255,255,.018) 6px);
@@ -240,9 +245,7 @@
 
   <nav class="topnav">
     <a class="cur" href="index.html">▣ Carte &amp; Legenda</a>
-    <a href="index-immagini.html">◆ Immagini</a>
     <a href="compendio.html">▤ Compendio · Regole</a>
-    <a href="diagramma.html">◆ Diagramma di flusso</a>
     <a href="schemi.html">▦ Schemi del modulo</a>
   </nav>
 
@@ -324,6 +327,8 @@ document.getElementById('kwgrid').innerHTML = KW.map(k=>`<div class="kw ${k[1]}"
 
 /* ---- RENDER CARDS ---- */
 const CLS_ART={PROTOCOL:'PT',DIRECTORY:'DIR',IDENTITY:'ID',ACCESS:'ACC',POLICY:'POL',TOPOLOGY:'TOP',THREAT:'THR'};
+// parola-chiave immagine per classe → foto casuale a tema da LoremFlickr
+const CLS_IMG={PROTOCOL:'network',DIRECTORY:'server',IDENTITY:'fingerprint',ACCESS:'padlock',POLICY:'document',TOPOLOGY:'datacenter',THREAT:'hacker'};
 const grid=document.getElementById('cards'), countEl=document.getElementById('count'), noHits=document.getElementById('nohits');
 let curCls='all', curQ='';
 function norm(s){return (s||'').toLowerCase();}
@@ -336,17 +341,21 @@ function cardMatches(c,q){
 }
 function render(){
   grid.innerHTML=''; let shown=0; const q=curQ.toLowerCase();
-  CARDS.forEach(c=>{
+  CARDS.forEach((c,i)=>{
     if(curCls!=='all' && c.cls!==curCls) return;
     if(!cardMatches(c,q)) return; shown++;
     const sys=c.cost==='S';
     const chips=c.kw.map(k=>`<span class="chip" data-kw="${k.replace(/"/g,'&quot;')}">${k}</span>`).join('');
     const id=slug(c.n);
     const wm=CLS_ART[c.cls]||c.cls.slice(0,3);
+    const tag=CLS_IMG[c.cls]||'technology';
+    const img=`https://loremflickr.com/360/240/${tag}?lock=${i+1}`;
     const el=document.createElement('div');
     el.className='card '+c.fac;
     el.innerHTML=`
       <div class="c-art">
+        <img class="c-img" src="${img}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.classList.add('broken')">
+        <div class="c-art-tint"></div>
         <div class="c-cost ${sys?'sys':''}">${c.cost}</div>
         <div class="c-type">${c.ty}</div>
         <div class="c-art-wm">${wm}</div>

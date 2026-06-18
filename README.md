@@ -8,7 +8,6 @@ La **carta** dice il processo di gioco; lo **specchietto/legenda** dice cos'è d
 |---|---|
 | `index.html` | Galleria carte + glossario keyword + legenda AD. Ricerca con autocompletamento; finestre overlay che si fissano/chiudono con un click (indipendenti tra loro); rimandi al compendio. |
 | `compendio.html` | Compendio dei **processi di Active Directory** in stile rulebook a regole numerate (Cap.Sez.Regola), ordinato per ordine reale di applicazione: identità → autenticazione → autorizzazione → policy → replica → minacce. |
-| `diagramma.html` | Diagramma logico di flusso: un'unica catena verticale dall'identità all'accesso; ogni freccia è la procedura che collega i nodi. |
 | `root-of-trust-standalone.html` | Versione single-file (galleria + compendio + rimandi interni), comoda per la condivisione. |
 | `data.js` | **Unica fonte di verità**: keyword, carte, legenda, riferimenti al compendio. Si modifica qui. |
 | `CLAUDE.md` | Contesto di progetto per Claude Code. |
